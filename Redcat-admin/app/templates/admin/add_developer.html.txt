@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block title %}Новый застройщик{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Новый застройщик</h1>
+    <button type="button" class="btn btn-light btn-sm" onclick="history.back()">Назад</button>
+</div>
+<form id="developer-form" novalidate>
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Название застройщика <span class="help-icon" data-bs-toggle="tooltip" title="Официальное наименование компании-застройщика">?</span></label>
+                <input type="text" class="form-control" name="name" id="field-name" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Каналы MAX, Telegram <span class="help-icon" data-bs-toggle="tooltip" title="Ссылки или описания каналов кураторов">?</span></label>
+                <textarea class="form-control" name="channels" id="field-channels" rows="2"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Ссылка на шахматку <span class="help-icon" data-bs-toggle="tooltip" title="URL интерактивной шахматки (план квартир)">?</span></label>
+                <input type="url" class="form-control" name="chessboard_link" id="field-chessboard_link">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Фид <span class="help-icon" data-bs-toggle="tooltip" title="Описание или ссылка на фид объектов">?</span></label>
+                <textarea class="form-control" name="feed" id="field-feed" rows="2"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Список ЖК <span class="help-icon" data-bs-toggle="tooltip" title="Добавьте хотя бы один жилой комплекс с комиссией и куратором">?</span></div>
+        <div class="card-body">
+            <div id="complexes-container"></div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="add-complex">+ Добавить ЖК</button>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Контакты <span class="help-icon" data-bs-toggle="tooltip" title="Различные роли: куратор, руководитель отдела продаж, партнёрского отдела, документооборот">?</span></div>
+        <div class="card-body">
+            <div id="contacts-container"></div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="add-contact">+ Добавить контакт</button>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Документы <span class="help-icon" data-bs-toggle="tooltip" title="Прикрепите агентский договор (или аналогичные документы)">?</span></div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Агентский договор (подписанный)</label>
+                <input type="file" class="form-control" id="agency-file" accept=".pdf,.doc,.docx">
+                <div id="agency-file-info" class="form-text">Файл не выбран</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Дополнительные документы</label>
+                <input type="file" class="form-control" id="extra-files" multiple accept=".pdf,.doc,.docx,.txt">
+                <div id="extra-files-info" class="form-text">Файлы не выбраны</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center sticky-bottom-bar bg-white py-3 border-top">
+        <button type="button" class="btn btn-outline-secondary" onclick="history.back()">Назад</button>
+        <button type="button" class="btn btn-success btn-lg" id="submit-btn">Завершить</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
+    const draftFields = ['name', 'channels', 'chessboard_link', 'feed'];
+    let complexes = [];
+    let contacts = [];
+    let uploadedFiles = [];
+
+    async function loadDraft() {
+        const resp = await fetch('/admin/api/draft');
+        const draft = await resp.json();
+        if (draft && Object.keys(draft).length > 0) {
+            document.getElementById('field-name').value = draft.name || '';
+            document.getElementById('field-channels').value = draft.channels || '';
+            document.getElementById('field-chessboard_link').value = draft.chessboard_link || '';
+            document.getElementById('field-feed').value = draft.feed || '';
+            if (draft.complexes) complexes = draft.complexes;
+            if (draft.contacts) contacts = draft.contacts;
+            if (draft.uploadedFiles) uploadedFiles = draft.uploadedFiles;
+            renderComplexes();
+            renderContacts();
+        }
+    }
+
+    async function saveDraft() {
+        const data = {
+            name: document.getElementById('field-name').value,
+            channels: document.getElementById('field-channels').value,
+            chessboard_link: document.getElementById('field-chessboard_link').value,
+            feed: document.getElementById('field-feed').value,
+            complexes: complexes,
+            contacts: contacts,
+            uploadedFiles: uploadedFiles
+        };
+        await fetch('/admin/api/draft', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+    }
+
+    function renderComplexes() {
+        const container = document.getElementById('complexes-container');
+        container.innerHTML = '';
+        complexes.forEach((comp, index) => {
+            const div = document.createElement('div');
+            div.className = 'row mb-2 align-items-end';
+            div.innerHTML = `
+                <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="Название ЖК" value="${comp.name || ''}" onchange="updateComplex(${index}, 'name', this.value)">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" class="form-control" placeholder="Комиссия" value="${comp.commission || ''}" onchange="updateComplex(${index}, 'commission', this.value)">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" class="form-control" placeholder="Куратор (контактное лицо)" value="${comp.contact_person || ''}" onchange="updateComplex(${index}, 'contact_person', this.value)">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-danger btn-sm" onclick="removeComplex(${index})">✕</button>
+                </div>`;
+            container.appendChild(div);
+        });
+    }
+
+    window.updateComplex = function(index, key, value) {
+        complexes[index][key] = value;
+        saveDraft();
+    };
+    window.removeComplex = function(index) {
+        complexes.splice(index, 1);
+        renderComplexes();
+        saveDraft();
+    };
+
+    document.getElementById('add-complex').addEventListener('click', () => {
+        complexes.push({name: '', commission: '', contact_person: ''});
+        renderComplexes();
+        saveDraft();
+    });
+
+    function renderContacts() {
+        const container = document.getElementById('contacts-container');
+        container.innerHTML = '';
+        contacts.forEach((cont, index) => {
+            const div = document.createElement('div');
+            div.className = 'row mb-2 align-items-end';
+            div.innerHTML = `
+                <div class="col-md-3">
+                    <select class="form-select" onchange="updateContact(${index}, 'type', this.value)">
+                        <option ${cont.type === 'curator' ? 'selected' : ''} value="curator">Куратор</option>
+                        <option ${cont.type === 'rop' ? 'selected' : ''} value="rop">РОП</option>
+                        <option ${cont.type === 'partner_head' ? 'selected' : ''} value="partner_head">Рук. партнёрского отдела</option>
+                        <option ${cont.type === 'doc_flow' ? 'selected' : ''} value="doc_flow">Документооборот</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" class="form-control" placeholder="Имя" value="${cont.name || ''}" onchange="updateContact(${index}, 'name', this.value)">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control" placeholder="Телефон" value="${cont.phone || ''}" onchange="updateContact(${index}, 'phone', this.value)">
+                </div>
+                <div class="col-md-2">
+                    <input type="email" class="form-control" placeholder="Email" value="${cont.email || ''}" onchange="updateContact(${index}, 'email', this.value)">
+                </div>
+                <div class="col-md-1">
+                    <button class="btn btn-danger btn-sm" onclick="removeContact(${index})">✕</button>
+                </div>`;
+            container.appendChild(div);
+        });
+    }
+
+    window.updateContact = function(index, key, value) {
+        contacts[index][key] = value;
+        saveDraft();
+    };
+    window.removeContact = function(index) {
+        contacts.splice(index, 1);
+        renderContacts();
+        saveDraft();
+    };
+
+    document.getElementById('add-contact').addEventListener('click', () => {
+        contacts.push({type: 'curator', name: '', phone: '', email: ''});
+        renderContacts();
+        saveDraft();
+    });
+
+    document.querySelectorAll('#field-name, #field-channels, #field-chessboard_link, #field-feed').forEach(el => {
+        el.addEventListener('input', saveDraft);
+    });
+
+    async function uploadFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const resp = await fetch('/admin/api/upload', {method: 'POST', body: formData});
+        const result = await resp.json();
+        if (result.id) {
+            uploadedFiles.push(result.id);
+            saveDraft();
+            return result;
+        }
+        return null;
+    }
+
+    document.getElementById('agency-file').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const info = document.getElementById('agency-file-info');
+            info.textContent = 'Загрузка...';
+            const uploaded = await uploadFile(file);
+            if (uploaded) info.textContent = `Загружен: ${uploaded.filename}`;
+            else info.textContent = 'Ошибка загрузки';
+        }
+    });
+
+    document.getElementById('extra-files').addEventListener('change', async (e) => {
+        const files = e.target.files;
+        const info = document.getElementById('extra-files-info');
+        info.textContent = 'Загрузка...';
+        for (let file of files) {
+            await uploadFile(file);
+        }
+        info.textContent = `Загружено файлов: ${uploadedFiles.length}`;
+    });
+
+    document.getElementById('submit-btn').addEventListener('click', async () => {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/admin/submit';
+        form.style.display = 'none';
+        const fields = {
+            name: document.getElementById('field-name').value,
+            channels: document.getElementById('field-channels').value,
+            chessboard_link: document.getElementById('field-chessboard_link').value,
+            feed: document.getElementById('field-feed').value,
+            complexes: JSON.stringify(complexes),
+            contacts: JSON.stringify(contacts)
+        };
+        for (let [key, value] of Object.entries(fields)) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = value;
+            form.appendChild(input);
+        }
+        uploadedFiles.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'doc_ids[]';
+            input.value = id;
+            form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+    });
+
+    loadDraft();
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+<h1 class="mb-4">Контрагенты (застройщики)</h1>
+<a href="{{ url_for('admin.add_developer') }}" class="btn btn-primary btn-lg mb-4">Добавить нового застройщика</a>
+{% if developers %}
+<div class="row">
+    {% for dev in developers %}
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">{{ dev.name }}</h5>
+                <p class="card-text">Создан: {{ dev.created_at.strftime('%d.%m.%Y') }}</p>
+                <a href="{{ url_for('admin.client_card', dev_id=dev.id) }}" class="btn btn-outline-secondary btn-sm">Карточка</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p>Нет ни одного застройщика. Добавьте первого!</p>
+{% endif %}
+{% endblock %}

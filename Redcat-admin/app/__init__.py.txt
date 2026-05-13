@@ -1,0 +1,23 @@
+import os
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from config import Config
+
+db = SQLAlchemy()
+
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
+
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+    db.init_app(app)
+
+    from app.admin.routes import admin_bp
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+
+    with app.app_context():
+        from app.models import Developer, Draft, ResidentialComplex, Contact, Document, Regulation
+        db.create_all()
+
+    return app

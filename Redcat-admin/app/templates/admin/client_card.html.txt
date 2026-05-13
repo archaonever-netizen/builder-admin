@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Карточка застройщика{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ developer.name }}</h1>
+    <a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary">← К списку</a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">Основная информация</div>
+    <div class="card-body">
+        <p><strong>Каналы:</strong> {{ developer.channels or '—' }}</p>
+        <p><strong>Шахматка:</strong> {% if developer.chessboard_link %}<a href="{{ developer.chessboard_link }}" target="_blank">{{ developer.chessboard_link }}</a>{% else %}—{% endif %}</p>
+        <p><strong>Фид:</strong> {{ developer.feed or '—' }}</p>
+    </div>
+</div>
+
+{% if developer.complexes %}
+<div class="card mb-3">
+    <div class="card-header">Жилые комплексы</div>
+    <ul class="list-group list-group-flush">
+        {% for rc in developer.complexes %}
+        <li class="list-group-item">{{ rc.name }} | Комиссия: {{ rc.commission }} | Куратор: {{ rc.contact_person }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% if developer.contacts %}
+<div class="card mb-3">
+    <div class="card-header">Контакты</div>
+    <ul class="list-group list-group-flush">
+        {% for c in developer.contacts %}
+        <li class="list-group-item">{{ c.contact_type }} — {{ c.name }}{% if c.phone %}, {{ c.phone }}{% endif %}{% if c.email %}, {{ c.email }}{% endif %}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% if regulation %}
+<div class="card mb-3">
+    <div class="card-header">Регламент фиксации и бронирования <span class="badge bg-info">ИИ-обработка</span></div>
+    <div class="card-body">
+        {% if regulation.data is mapping %}
+            {% for section, fields in regulation.data.items() %}
+                <h5>{{ section }}</h5>
+                <dl class="row">
+                    {% for key, val in fields.items() %}
+                        <dt class="col-sm-4">{{ key }}</dt>
+                        <dd class="col-sm-8">{{ val if val else '—' }}</dd>
+                    {% endfor %}
+                </dl>
+            {% endfor %}
+        {% else %}
+            <pre>{{ regulation.data }}</pre>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
