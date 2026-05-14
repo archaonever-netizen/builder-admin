@@ -128,12 +128,11 @@ def submit_developer():
         db.session.add(doc)
     db.session.commit()
 
-    # Запуск ИИ-агента в фоновом потоке
+    # Запуск ИИ-агента ТОЛЬКО если регламент ещё не существует
+    existing_regulation = Regulation.query.filter_by(developer_id=dev.id).first()
     agency_doc = Document.query.filter_by(developer_id=dev.id, doc_type='agency_contract').first()
-    if agency_doc:
-        # Захватываем текущее приложение, чтобы использовать его в потоке
+    if agency_doc and not existing_regulation:
         app = current_app._get_current_object()
-        
         def run_ai():
             try:
                 with app.app_context():
@@ -153,6 +152,38 @@ def submit_developer():
         thread.start()
 
     return redirect(url_for('admin.client_card', dev_id=dev.id))
+
+# Маршрут для ручного сохранения регламента
+@admin_bp.route('/client/<int:dev_id>/regulation', methods=['POST'])
+def save_regulation(dev_id):
+    dev = Developer.query.get_or_404(dev_id)
+    form_data = request.form
+
+    # Преобразуем плоские ключи вида "internal_regulation.company" в вложенный словарь
+    regulation_data = {}
+    for key, value in form_data.items():
+        if key.startswith('internal_regulation.') or key.startswith('booking_regulation.'):
+            parts = key.split('.')
+            section = parts[0]
+            field = parts[1]
+            if section not in regulation_data:
+                regulation_data[section] = {}
+            regulation_data[section][field] = value.strip()
+
+    # Ищем существующий регламент или создаём новый
+    reg = Regulation.query.filter_by(developer_id=dev_id).first()
+    if reg:
+        reg.data = regulation_data
+    else:
+        reg = Regulation(
+            data=regulation_data,
+            raw_text='',
+            developer_id=dev_id
+        )
+        db.session.add(reg)
+    db.session.commit()
+
+    return redirect(url_for('admin.client_card', dev_id=dev_id))
 
 @admin_bp.route('/client/<int:dev_id>')
 def client_card(dev_id):
