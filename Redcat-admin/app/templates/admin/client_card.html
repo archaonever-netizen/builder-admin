@@ -42,18 +42,26 @@
     <div class="card-header">Регламент фиксации и бронирования <span class="badge bg-info">ИИ-обработка</span></div>
     <div class="card-body">
         {% if regulation.data is mapping %}
-            {% for section, fields in regulation.data.items() %}
-                <h5>{{ section }}</h5>
-                <dl class="row">
-                    {% for key, val in fields.items() %}
-                        <dt class="col-sm-4">{{ key }}</dt>
-                        <dd class="col-sm-8">{{ val if val else '—' }}</dd>
-                    {% endfor %}
-                </dl>
+    {% for section, fields in regulation.data.items() %}
+        <h5>{{ section }}</h5>
+        <dl class="row">
+            {% for key, val in fields.items() %}
+                <dt class="col-sm-4">{{ key }}</dt>
+                <dd class="col-sm-8">
+                    {% if val is string and val.startswith('Уточнить') %}
+                        <span class="badge bg-warning text-dark me-2">Уточнить</span>
+                        {{ val[9:] if val|length > 9 else val }}
+                    {% elif val is string and val.startswith('Предположительно') %}
+                        <span class="badge bg-info text-dark me-2">Косвенно</span>
+                        {{ val }}
+                    {% else %}
+                        {{ val if val else '—' }}
+                    {% endif %}
+                </dd>
             {% endfor %}
-        {% else %}
-            <pre>{{ regulation.data }}</pre>
-        {% endif %}
+        </dl>
+    {% endfor %}
+{% endif %}
     </div>
 </div>
 {% else %}
