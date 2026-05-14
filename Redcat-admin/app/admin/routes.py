@@ -1,9 +1,17 @@
 import json, os, uuid, threading
+from datetime import datetime
 from flask import (render_template, request, jsonify, session, redirect, url_for, current_app)
 from app import db
 from app.admin import admin_bp
 from app.models import Developer, ResidentialComplex, Contact, Document, Regulation, Draft
 from app.ai_agent.agent import process_agency_agreement
+
+CONTACT_TYPES = {
+    'curator': 'Куратор',
+    'rop': 'РОП',
+    'partner_head': 'Руководитель партнёрского отдела',
+    'doc_flow': 'Документооборот'
+}
 
 @admin_bp.route('/')
 def index():
@@ -57,7 +65,6 @@ def upload_file():
             {"content-type": file.content_type}
         )
         public_url = current_app.supabase.storage.from_('developer-docs').get_public_url(unique_filename)
-
         return jsonify({
             'id': unique_filename,
             'filename': original_filename,
@@ -87,6 +94,9 @@ def submit_developer():
         for comp in complexes:
             rc = ResidentialComplex(
                 name=comp.get('name'),
+                city=comp.get('city', ''),
+                region=comp.get('region', ''),
+                property_type=comp.get('property_type', ''),
                 commission=comp.get('commission'),
                 contact_person=comp.get('contact_person'),
                 developer_id=dev.id
@@ -131,30 +141,32 @@ def submit_developer():
 def client_card(dev_id):
     dev = Developer.query.get_or_404(dev_id)
     regulation = Regulation.query.filter_by(developer_id=dev_id).first()
-    return render_template('admin/client_card.html', developer=dev, regulation=regulation)
+    return render_template('admin/client_card.html', developer=dev, regulation=regulation, contact_types=CONTACT_TYPES)
 
-# ---------- CRUD для ЖК ----------
+# CRUD для ЖК
 @admin_bp.route('/client/<int:dev_id>/complex/add', methods=['POST'])
 def add_complex(dev_id):
     dev = Developer.query.get_or_404(dev_id)
-    name = request.form.get('name')
-    commission = request.form.get('commission')  # число
-    contact_person = request.form.get('contact_person')
-    if name:
-        rc = ResidentialComplex(
-            name=name,
-            commission=commission,
-            contact_person=contact_person,
-            developer_id=dev.id
-        )
-        db.session.add(rc)
-        db.session.commit()
+    rc = ResidentialComplex(
+        name=request.form.get('name'),
+        city=request.form.get('city', ''),
+        region=request.form.get('region', ''),
+        property_type=request.form.get('property_type', ''),
+        commission=request.form.get('commission'),
+        contact_person=request.form.get('contact_person'),
+        developer_id=dev.id
+    )
+    db.session.add(rc)
+    db.session.commit()
     return redirect(url_for('admin.client_card', dev_id=dev_id))
 
 @admin_bp.route('/complex/<int:complex_id>/edit', methods=['POST'])
 def edit_complex(complex_id):
     rc = ResidentialComplex.query.get_or_404(complex_id)
     rc.name = request.form.get('name')
+    rc.city = request.form.get('city', '')
+    rc.region = request.form.get('region', '')
+    rc.property_type = request.form.get('property_type', '')
     rc.commission = request.form.get('commission')
     rc.contact_person = request.form.get('contact_person')
     db.session.commit()
@@ -168,24 +180,19 @@ def delete_complex(complex_id):
     db.session.commit()
     return redirect(url_for('admin.client_card', dev_id=dev_id))
 
-# ---------- CRUD для Контактов ----------
+# CRUD для Контактов
 @admin_bp.route('/client/<int:dev_id>/contact/add', methods=['POST'])
 def add_contact(dev_id):
     dev = Developer.query.get_or_404(dev_id)
-    contact_type = request.form.get('contact_type')
-    name = request.form.get('name')
-    phone = request.form.get('phone')
-    email = request.form.get('email')
-    if name:
-        c = Contact(
-            contact_type=contact_type,
-            name=name,
-            phone=phone,
-            email=email,
-            developer_id=dev.id
-        )
-        db.session.add(c)
-        db.session.commit()
+    c = Contact(
+        contact_type=request.form.get('contact_type'),
+        name=request.form.get('name'),
+        phone=request.form.get('phone'),
+        email=request.form.get('email'),
+        developer_id=dev.id
+    )
+    db.session.add(c)
+    db.session.commit()
     return redirect(url_for('admin.client_card', dev_id=dev_id))
 
 @admin_bp.route('/contact/<int:contact_id>/edit', methods=['POST'])
@@ -206,7 +213,7 @@ def delete_contact(contact_id):
     db.session.commit()
     return redirect(url_for('admin.client_card', dev_id=dev_id))
 
-# ---------- Удаление документа ----------
+# Документы
 @admin_bp.route('/client/<int:dev_id>/document/<int:doc_id>/delete', methods=['POST'])
 def delete_document(dev_id, doc_id):
     doc = Document.query.get_or_404(doc_id)
@@ -218,47 +225,38 @@ def delete_document(dev_id, doc_id):
     db.session.commit()
     return redirect(url_for('admin.client_card', dev_id=dev_id))
 
-# ---------- Загрузка документа в существующую карточку ----------
 @admin_bp.route('/client/<int:dev_id>/upload', methods=['POST'])
 def upload_for_developer(dev_id):
     dev = Developer.query.get_or_404(dev_id)
-    if 'file' not in request.files:
-        return redirect(url_for('admin.client_card', dev_id=dev_id))
-    file = request.files['file']
-    if file.filename == '':
-        return redirect(url_for('admin.client_card', dev_id=dev_id))
-
-    original_filename = file.filename
-    file_extension = original_filename.rsplit('.', 1)[-1] if '.' in original_filename else ''
-    unique_filename = f"{uuid.uuid4()}.{file_extension}" if file_extension else str(uuid.uuid4())
-
-    try:
-        file_bytes = file.read()
-        current_app.supabase.storage.from_('developer-docs').upload(
-            unique_filename,
-            file_bytes,
-            {"content-type": file.content_type}
-        )
-        public_url = current_app.supabase.storage.from_('developer-docs').get_public_url(unique_filename)
-        doc = Document(
-            filename=unique_filename,
-            original_filename=original_filename,
-            filepath=public_url,
-            doc_type='agency_contract',
-            developer_id=dev.id
-        )
-        db.session.add(doc)
-        db.session.commit()
-    except Exception as e:
-        current_app.logger.error(f"Upload error: {e}")
-
+    files = request.files.getlist('files')
+    for file in files:
+        if file.filename == '':
+            continue
+        original_filename = file.filename
+        file_extension = original_filename.rsplit('.', 1)[-1] if '.' in original_filename else ''
+        unique_filename = f"{uuid.uuid4()}.{file_extension}" if file_extension else str(uuid.uuid4())
+        try:
+            file_bytes = file.read()
+            current_app.supabase.storage.from_('developer-docs').upload(
+                unique_filename, file_bytes, {"content-type": file.content_type}
+            )
+            public_url = current_app.supabase.storage.from_('developer-docs').get_public_url(unique_filename)
+            doc = Document(
+                filename=unique_filename,
+                original_filename=original_filename,
+                filepath=public_url,
+                doc_type='agency_contract',
+                developer_id=dev.id
+            )
+            db.session.add(doc)
+        except Exception as e:
+            current_app.logger.error(f"Upload error: {e}")
+    db.session.commit()
     return redirect(url_for('admin.client_card', dev_id=dev_id))
 
-
-# ---------- Регламент ----------
+# Регламент
 @admin_bp.route('/client/<int:dev_id>/regulation', methods=['POST'])
 def save_regulation(dev_id):
-    dev = Developer.query.get_or_404(dev_id)
     form_data = request.form
     regulation_data = {}
     for key, value in form_data.items():
@@ -269,11 +267,10 @@ def save_regulation(dev_id):
             if section not in regulation_data:
                 regulation_data[section] = {}
             regulation_data[section][field] = value.strip()
-
     reg = Regulation.query.filter_by(developer_id=dev_id).first()
     if reg:
         reg.data = regulation_data
-        reg.status = ''  # сбросить статус после ручного сохранения
+        reg.status = ''
     else:
         reg = Regulation(data=regulation_data, status='', developer_id=dev_id)
         db.session.add(reg)
@@ -282,7 +279,6 @@ def save_regulation(dev_id):
 
 @admin_bp.route('/client/<int:dev_id>/regulation/start', methods=['POST'])
 def start_regulation(dev_id):
-    dev = Developer.query.get_or_404(dev_id)
     docs = Document.query.filter_by(developer_id=dev_id, doc_type='agency_contract').all()
     if not docs:
         return jsonify({'error': 'Нет файлов для анализа'}), 400
@@ -291,7 +287,6 @@ def start_regulation(dev_id):
     if not reg:
         reg = Regulation(developer_id=dev_id, data={}, status='')
         db.session.add(reg)
-    
     reg.status = "Анализирую"
     db.session.commit()
 
@@ -318,53 +313,14 @@ def start_regulation(dev_id):
     thread = threading.Thread(target=run_auto)
     thread.daemon = True
     thread.start()
-
     return jsonify({'status': 'started'})
-
-@admin_bp.route('/client/<int:dev_id>/regulation/auto', methods=['POST'])
-def auto_regulation(dev_id):
-    dev = Developer.query.get_or_404(dev_id)
-    docs = Document.query.filter_by(developer_id=dev_id, doc_type='agency_contract').all()
-    if not docs:
-        return redirect(url_for('admin.client_card', dev_id=dev_id))
-
-    reg = Regulation.query.filter_by(developer_id=dev_id).first()
-    if not reg:
-        reg = Regulation(developer_id=dev_id, data={}, status='')
-        db.session.add(reg)
-    reg.status = "Анализирую"
-    db.session.commit()
-
-    app = current_app._get_current_object()
-    urls = [doc.filepath for doc in docs]
-    def run_auto():
-        with app.app_context():
-            reg_local = Regulation.query.filter_by(developer_id=dev_id).first()
-            if not reg_local:
-                return
-            try:
-                reg_local.status = "Систематизация"
-                db.session.commit()
-                result = process_agency_agreement(urls)
-                reg_local.status = "Заполнение"
-                db.session.commit()
-                reg_local.data = result
-                reg_local.status = "Выполнено"
-            except Exception as e:
-                reg_local.status = f"Ошибка: {e}"
-            db.session.commit()
-    thread = threading.Thread(target=run_auto)
-    thread.daemon = True
-    thread.start()
-    return redirect(url_for('admin.client_card', dev_id=dev_id))
 
 @admin_bp.route('/client/<int:dev_id>/regulation/status')
 def regulation_status(dev_id):
     reg = Regulation.query.filter_by(developer_id=dev_id).first()
-    status = reg.status if reg else ''
-    return jsonify({'status': status})
+    return jsonify({'status': reg.status if reg else ''})
 
-# Редактирование/удаление застройщика (без изменений)
+# Редактирование/удаление застройщика
 @admin_bp.route('/client/<int:dev_id>/edit', methods=['GET', 'POST'])
 def edit_developer(dev_id):
     dev = Developer.query.get_or_404(dev_id)
@@ -372,7 +328,9 @@ def edit_developer(dev_id):
         dev.name = request.form.get('name')
         dev.channels = request.form.get('channels')
         dev.chessboard_link = request.form.get('chessboard_link')
+        dev.chessboard_updated = datetime.utcnow() if request.form.get('chessboard_link') != dev.chessboard_link else dev.chessboard_updated
         dev.feed = request.form.get('feed')
+        dev.feed_updated = datetime.utcnow() if request.form.get('feed') != dev.feed else dev.feed_updated
         db.session.commit()
         return redirect(url_for('admin.client_card', dev_id=dev.id))
     return render_template('admin/edit_developer.html', developer=dev)
