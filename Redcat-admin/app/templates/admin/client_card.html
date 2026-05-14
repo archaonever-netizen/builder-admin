@@ -283,10 +283,8 @@
             <span id="regulation-status-badge">
                 {% if regulation and regulation.status == 'Выполнено' %}
                     <span class="badge bg-success">Выполнено</span>
-                {% elif regulation and regulation.status and regulation.status != 'Выполнено' %}
-                    <span class="badge bg-info" id="status-text">{{ regulation.status }}</span>
-                {% elif regulation and regulation.data %}
-                    <span class="badge bg-secondary">Заполнено вручную</span>
+                {% elif regulation and regulation.data is mapping and regulation.data|length > 0 %}
+    <span class="badge bg-secondary">Заполнено вручную</span>
                 {% else %}
                     <span class="badge bg-secondary">Не заполнен</span>
                 {% endif %}
@@ -295,7 +293,7 @@
         <button class="btn btn-outline-secondary btn-sm" id="toggle-regulation-btn">Регламент фиксации</button>
     </div>
     <div class="card-body">
-        <!-- Форма регламента: показывается при ручном нажатии или при статусе "Выполнено" -->
+        <!-- Форма редактирования -->
         <div id="regulation-form" style="display: {% if regulation and regulation.status == 'Выполнено' %}block{% else %}none{% endif %};">
             <form id="regulation-manual-form" method="POST" action="{{ url_for('admin.save_regulation', dev_id=developer.id) }}">
                 <h5>Внутренний регламент</h5>
@@ -340,9 +338,11 @@
                 </div>
             </form>
         </div>
-        <!-- Статичный просмотр показывается только если нет данных или статус не "Выполнено" -->
-        <div id="regulation-view" style="{% if regulation and regulation.data and regulation.status != 'Выполнено' %}display: block;{% else %}display: none;{% endif %}">
-            {% if regulation and regulation.data is mapping %}
+
+        <!-- Статичный просмотр (только если не "Выполнено" и есть данные) -->
+        {% if regulation and regulation.data is mapping and regulation.data|length > 0 and regulation.status != 'Выполнено' %}
+        <div id="regulation-view">
+            {% if regulation.data is mapping %}
                 {% for section, fields in regulation.data.items() %}
                     <h5>{{ 'Внутренний регламент' if section == 'internal_regulation' else 'Регламент бронирования' }}</h5>
                     <dl class="row">
@@ -362,15 +362,21 @@
                         {% endfor %}
                     </dl>
                 {% endfor %}
-            {% elif regulation and regulation.raw_response %}
+            {% elif regulation.raw_response %}
                 <pre>{{ regulation.raw_response }}</pre>
-            {% else %}
-                <p>Нет данных регламента.</p>
             {% endif %}
+            <div class="text-end mt-2">
+                <button class="btn btn-outline-secondary btn-sm" id="edit-regulation-btn">Редактировать</button>
+            </div>
         </div>
+        {% elif not regulation or not regulation.data or (regulation.data is mapping and regulation.data|length == 0) %}
+        <div id="regulation-view">
+            <p>Нет данных регламента.</p>
+        </div>
+        {% endif %}
     </div>
 </div>
-
+    
 <!-- Модальные окна редактирования ЖК -->
 {% for rc in developer.complexes %}
 <div class="modal fade" id="editComplexModal{{ rc.id }}" tabindex="-1">
@@ -457,11 +463,27 @@
         });
     }
 
-    // Переключение формы регламента
+    // Переключение формы регламента (показать/скрыть форму)
     document.getElementById('toggle-regulation-btn').addEventListener('click', function() {
         var form = document.getElementById('regulation-form');
-        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        var view = document.getElementById('regulation-view');
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+            if (view) view.style.display = 'none';
+        } else {
+            form.style.display = 'none';
+            if (view) view.style.display = 'block';
+        }
     });
+
+    // Кнопка "Редактировать" в статике
+    var editBtn = document.getElementById('edit-regulation-btn');
+    if (editBtn) {
+        editBtn.addEventListener('click', function() {
+            document.getElementById('regulation-form').style.display = 'block';
+            document.getElementById('regulation-view').style.display = 'none';
+        });
+    }
 
     // Автоматическое заполнение
     document.getElementById('start-auto-btn').addEventListener('click', function() {
@@ -486,22 +508,13 @@
                     fetch(statusUrl)
                         .then(function(r) { return r.json(); })
                         .then(function(d) {
-                            autoBtn.textContent = d.status;
                             if (d.status === 'Выполнено' || d.status.startsWith('Ошибка')) {
                                 autoBtn.textContent = 'Заполнить автоматически';
                                 autoBtn.disabled = false;
                                 fields.forEach(function(f) { f.disabled = false; f.style.backgroundColor = ''; });
-                                if (d.status === 'Выполнено') {
-    // Показать форму, скрыть просмотр, разблокировать поля
-    document.getElementById('regulation-form').style.display = 'block';
-    document.getElementById('regulation-view').style.display = 'none';
-    fields.forEach(function(f) { f.disabled = false; f.style.backgroundColor = ''; });
-    autoBtn.disabled = false;
-    autoBtn.textContent = 'Заполнить автоматически';
-    // Обновить значения полей через API или оставить как есть?
-    // При следующем открытии страницы данные подтянутся из базы.
-}
+                                if (d.status === 'Выполнено') location.reload(); // перезагрузка покажет форму
                             } else {
+                                autoBtn.textContent = d.status;
                                 setTimeout(poll, 3000);
                             }
                         });
