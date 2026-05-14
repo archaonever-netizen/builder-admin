@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Редактирование застройщика{% endblock %}
+{% block content %}
+<h1>Редактирование: {{ developer.name }}</h1>
+<form method="POST">
+    <div class="mb-3">
+        <label class="form-label">Название застройщика</label>
+        <input type="text" class="form-control" name="name" value="{{ developer.name }}" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Каналы MAX, Telegram</label>
+        <textarea class="form-control" name="channels" rows="2">{{ developer.channels or '' }}</textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Ссылка на шахматку</label>
+        <input type="url" class="form-control" name="chessboard_link" value="{{ developer.chessboard_link or '' }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Фид</label>
+        <textarea class="form-control" name="feed" rows="2">{{ developer.feed or '' }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a href="{{ url_for('admin.client_card', dev_id=developer.id) }}" class="btn btn-outline-secondary">Отмена</a>
+</form>
+{% endblock %}
