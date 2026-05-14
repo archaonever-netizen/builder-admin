@@ -320,6 +320,26 @@ def regulation_status(dev_id):
     reg = Regulation.query.filter_by(developer_id=dev_id).first()
     return jsonify({'status': reg.status if reg else ''})
 
+@admin_bp.route('/client/<int:dev_id>/regulation/field', methods=['POST'])
+def update_regulation_field(dev_id):
+    reg = Regulation.query.filter_by(developer_id=dev_id).first()
+    if not reg or not reg.data:
+        return jsonify({'error': 'Регламент не найден'}), 404
+    data = request.get_json()
+    key = data.get('key')
+    value = data.get('value', '')
+    if not key:
+        return jsonify({'error': 'Не указан ключ'}), 400
+    # Поддержка вложенных ключей вида internal_regulation.company
+    parts = key.split('.', 1)
+    if len(parts) == 2 and parts[0] in reg.data and isinstance(reg.data[parts[0]], dict):
+        reg.data[parts[0]][parts[1]] = value
+        reg.status = ''  # сброс статуса, чтобы отображалось как ручное
+    else:
+        return jsonify({'error': 'Неверный ключ'}), 400
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
 # Редактирование/удаление застройщика
 @admin_bp.route('/client/<int:dev_id>/edit', methods=['GET', 'POST'])
 def edit_developer(dev_id):
