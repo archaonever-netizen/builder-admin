@@ -67,7 +67,12 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Подключение библиотек ДО основного скрипта -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8-beta.17/jquery.inputmask.min.js"></script>
+
 <script>
+    // Теперь $ и inputmask доступны
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
 
@@ -116,19 +121,37 @@
             const div = document.createElement('div');
             div.className = 'row mb-2 align-items-end';
             div.innerHTML = `
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <input type="text" class="form-control" placeholder="Название ЖК" value="${comp.name || ''}" onchange="updateComplex(${index}, 'name', this.value)">
                 </div>
-                <div class="col-md-3">
-                    <input type="text" class="form-control" placeholder="Комиссия" value="${comp.commission || ''}" onchange="updateComplex(${index}, 'commission', this.value)">
-                </div>
-                <div class="col-md-3">
-                    <input type="text" class="form-control" placeholder="Куратор (контактное лицо)" value="${comp.contact_person || ''}" onchange="updateComplex(${index}, 'contact_person', this.value)">
+                <div class="col-md-2">
+                    <input type="text" class="form-control" placeholder="Город" value="${comp.city || ''}" onchange="updateComplex(${index}, 'city', this.value)">
                 </div>
                 <div class="col-md-2">
+                    <select class="form-select" onchange="updateComplex(${index}, 'region', this.value)">
+                        <option value="">Регион</option>
+                        <option value="Москва и МО" ${comp.region === 'Москва и МО' ? 'selected' : ''}>Москва и МО</option>
+                        <option value="Санкт-Петербург и ЛО" ${comp.region === 'Санкт-Петербург и ЛО' ? 'selected' : ''}>Санкт-Петербург и ЛО</option>
+                        <option value="Краснодарский край" ${comp.region === 'Краснодарский край' ? 'selected' : ''}>Краснодарский край</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control" placeholder="Тип недвижимости" value="${comp.property_type || ''}" onchange="updateComplex(${index}, 'property_type', this.value)">
+                </div>
+                <div class="col-md-2">
+                    <div class="input-group">
+                        <input type="text" class="form-control commission-input" placeholder="Комиссия" value="${comp.commission || ''}" onchange="updateComplex(${index}, 'commission', this.value)">
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+                <div class="col-md-1">
                     <button class="btn btn-danger btn-sm" onclick="removeComplex(${index})">✕</button>
                 </div>`;
             container.appendChild(div);
+        });
+        // Применить маску комиссии к новым полям
+        $('.commission-input').off('input').on('input', function() {
+            this.value = this.value.replace(/\D/g, '');
         });
     }
 
@@ -143,7 +166,7 @@
     };
 
     document.getElementById('add-complex').addEventListener('click', () => {
-        complexes.push({name: '', commission: '', contact_person: ''});
+        complexes.push({name: '', city: '', region: '', property_type: '', commission: '', contact_person: ''});
         renderComplexes();
         saveDraft();
     });
@@ -167,7 +190,7 @@
                     <input type="text" class="form-control" placeholder="Имя" value="${cont.name || ''}" onchange="updateContact(${index}, 'name', this.value)">
                 </div>
                 <div class="col-md-2">
-                    <input type="text" class="form-control" placeholder="Телефон" value="${cont.phone || ''}" onchange="updateContact(${index}, 'phone', this.value)">
+                    <input type="tel" class="form-control phone-mask" placeholder="+7 (999) 999-99-99" value="${cont.phone || ''}" onchange="updateContact(${index}, 'phone', this.value)">
                 </div>
                 <div class="col-md-2">
                     <input type="email" class="form-control" placeholder="Email" value="${cont.email || ''}" onchange="updateContact(${index}, 'email', this.value)">
@@ -177,6 +200,8 @@
                 </div>`;
             container.appendChild(div);
         });
+        // Применить маску телефона к новым полям
+        $(".phone-mask").inputmask("+7 (999) 999-99-99");
     }
 
     window.updateContact = function(index, key, value) {
