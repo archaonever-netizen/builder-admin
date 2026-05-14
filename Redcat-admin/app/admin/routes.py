@@ -125,32 +125,6 @@ def submit_developer():
         db.session.add(doc)
     db.session.commit()
 
-    # Запуск ИИ, если нет регламента и есть документы
-    existing_regulation = Regulation.query.filter_by(developer_id=dev.id).first()
-    agency_docs = Document.query.filter_by(developer_id=dev.id, doc_type='agency_contract').all()
-    if agency_docs and not existing_regulation:
-        app = current_app._get_current_object()
-        def run_ai():
-            with app.app_context():
-                urls = [doc.filepath for doc in agency_docs]
-                reg = Regulation(status="Анализирую", developer_id=dev.id, data={})
-                db.session.add(reg)
-                db.session.commit()
-                try:
-                    reg.status = "Систематизация"
-                    db.session.commit()
-                    result = process_agency_agreement(urls)
-                    reg.status = "Заполнение"
-                    db.session.commit()
-                    reg.data = result
-                    reg.status = "Выполнено"
-                except Exception as e:
-                    reg.status = f"Ошибка: {e}"
-                db.session.commit()
-        thread = threading.Thread(target=run_ai)
-        thread.daemon = True
-        thread.start()
-
     return redirect(url_for('admin.client_card', dev_id=dev.id))
 
 @admin_bp.route('/client/<int:dev_id>')
@@ -305,6 +279,47 @@ def save_regulation(dev_id):
         db.session.add(reg)
     db.session.commit()
     return redirect(url_for('admin.client_card', dev_id=dev_id))
+
+@admin_bp.route('/client/<int:dev_id>/regulation/start', methods=['POST'])
+def start_regulation(dev_id):
+    dev = Developer.query.get_or_404(dev_id)
+    docs = Document.query.filter_by(developer_id=dev_id, doc_type='agency_contract').all()
+    if not docs:
+        return jsonify({'error': 'Нет файлов для анализа'}), 400
+
+    reg = Regulation.query.filter_by(developer_id=dev_id).first()
+    if not reg:
+        reg = Regulation(developer_id=dev_id, data={}, status='')
+        db.session.add(reg)
+    
+    reg.status = "Анализирую"
+    db.session.commit()
+
+    app = current_app._get_current_object()
+    urls = [doc.filepath for doc in docs]
+
+    def run_auto():
+        with app.app_context():
+            reg_local = Regulation.query.filter_by(developer_id=dev_id).first()
+            if not reg_local:
+                return
+            try:
+                reg_local.status = "Систематизация"
+                db.session.commit()
+                result = process_agency_agreement(urls)
+                reg_local.status = "Заполнение"
+                db.session.commit()
+                reg_local.data = result
+                reg_local.status = "Выполнено"
+            except Exception as e:
+                reg_local.status = f"Ошибка: {e}"
+            db.session.commit()
+
+    thread = threading.Thread(target=run_auto)
+    thread.daemon = True
+    thread.start()
+
+    return jsonify({'status': 'started'})
 
 @admin_bp.route('/client/<int:dev_id>/regulation/auto', methods=['POST'])
 def auto_regulation(dev_id):
