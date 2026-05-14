@@ -37,31 +37,47 @@
 </div>
 {% endif %}
 
+{% if developer.documents %}
+<div class="card mb-3">
+    <div class="card-header">Документы</div>
+    <ul class="list-group list-group-flush">
+        {% for doc in developer.documents %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ doc.filename }}</span>
+            <a href="{{ doc.filepath }}" class="btn btn-outline-primary btn-sm" target="_blank">Скачать</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
 {% if regulation %}
 <div class="card mb-3">
     <div class="card-header">Регламент фиксации и бронирования <span class="badge bg-info">ИИ-обработка</span></div>
     <div class="card-body">
         {% if regulation.data is mapping %}
-    {% for section, fields in regulation.data.items() %}
-        <h5>{{ section }}</h5>
-        <dl class="row">
-            {% for key, val in fields.items() %}
-                <dt class="col-sm-4">{{ key }}</dt>
-                <dd class="col-sm-8">
-                    {% if val is string and val.startswith('Уточнить') %}
-                        <span class="badge bg-warning text-dark me-2">Уточнить</span>
-                        {{ val[9:] if val|length > 9 else val }}
-                    {% elif val is string and val.startswith('Предположительно') %}
-                        <span class="badge bg-info text-dark me-2">Косвенно</span>
-                        {{ val }}
-                    {% else %}
-                        {{ val if val else '—' }}
-                    {% endif %}
-                </dd>
+            {% for section, fields in regulation.data.items() %}
+                <h5>{{ section }}</h5>
+                <dl class="row">
+                    {% for key, val in fields.items() %}
+                        <dt class="col-sm-4">{{ key }}</dt>
+                        <dd class="col-sm-8">
+                            {% if val is string and val.startswith('Уточнить') %}
+                                <span class="badge bg-warning text-dark me-2">Уточнить</span>
+                                {{ val[9:] if val|length > 9 else val }}
+                            {% elif val is string and val.startswith('Предположительно') %}
+                                <span class="badge bg-info text-dark me-2">Косвенно</span>
+                                {{ val }}
+                            {% else %}
+                                {{ val if val else '—' }}
+                            {% endif %}
+                        </dd>
+                    {% endfor %}
+                </dl>
             {% endfor %}
-        </dl>
-    {% endfor %}
-{% endif %}
+        {% else %}
+            <pre>{{ regulation.data }}</pre>
+        {% endif %}
     </div>
 </div>
 {% else %}
