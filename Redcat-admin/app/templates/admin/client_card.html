@@ -6,6 +6,7 @@
     <a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary">← К списку</a>
 </div>
 
+<!-- Основная информация, ЖК, Контакты (без изменений) -->
 <div class="card mb-3">
     <div class="card-header">Основная информация</div>
     <div class="card-body">
@@ -51,43 +52,95 @@
 </div>
 {% endif %}
 
-{% if regulation %}
+<!-- Блок регламента -->
 <div class="card mb-3">
-    <div class="card-header">Регламент фиксации и бронирования <span class="badge bg-info">ИИ-обработка</span></div>
-    <div class="card-body">
-        {% if regulation.data is mapping %}
-            {% for section, fields in regulation.data.items() %}
-                <h5>{{ section }}</h5>
-                <dl class="row">
-                    {% for key, val in fields.items() %}
-                        <dt class="col-sm-4">{{ key }}</dt>
-                        <dd class="col-sm-8">
-                            {% if val is string and val.startswith('Уточнить') %}
-                                <span class="badge bg-warning text-dark me-2">Уточнить</span>
-                                {{ val[9:] if val|length > 9 else val }}
-                            {% elif val is string and val.startswith('Предположительно') %}
-                                <span class="badge bg-info text-dark me-2">Косвенно</span>
-                                {{ val }}
-                            {% else %}
-                                {{ val if val else '—' }}
-                            {% endif %}
-                        </dd>
-                    {% endfor %}
-                </dl>
-            {% endfor %}
+    <div class="card-header">
+        Регламент фиксации и бронирования
+        {% if regulation %}
+            <span class="badge bg-info">ИИ-обработка</span>
+            <button class="btn btn-outline-secondary btn-sm float-end" onclick="toggleEdit()">Редактировать</button>
         {% else %}
-            <pre>{{ regulation.data }}</pre>
+            <span class="badge bg-warning text-dark">Не заполнен</span>
+            <button class="btn btn-outline-secondary btn-sm float-end" onclick="toggleEdit()">Заполнить вручную</button>
         {% endif %}
     </div>
-</div>
-{% else %}
-    {% if developer.documents %}
-    <div class="card mb-3">
-        <div class="card-header">Регламент фиксации и бронирования <span class="badge bg-warning text-dark">Обрабатывается...</span></div>
-        <div class="card-body">
-            <p>ИИ-агент обрабатывает загруженный договор. Пожалуйста, обновите страницу через минуту.</p>
+    <div class="card-body">
+        <!-- Режим просмотра -->
+        <div id="view-mode" {% if not regulation and not show_edit %}style="display:none"{% endif %}>
+            {% if regulation %}
+                {% if regulation.data is mapping %}
+                    {% for section, fields in regulation.data.items() %}
+                        <h5>{{ section }}</h5>
+                        <dl class="row">
+                            {% for key, val in fields.items() %}
+                                <dt class="col-sm-4">{{ key }}</dt>
+                                <dd class="col-sm-8">
+                                    {% if val is string and val.startswith('Уточнить') %}
+                                        <span class="badge bg-warning text-dark me-2">Уточнить</span>
+                                        {{ val[9:] if val|length > 9 else val }}
+                                    {% elif val is string and val.startswith('Предположительно') %}
+                                        <span class="badge bg-info text-dark me-2">Косвенно</span>
+                                        {{ val }}
+                                    {% else %}
+                                        {{ val if val else '—' }}
+                                    {% endif %}
+                                </dd>
+                            {% endfor %}
+                        </dl>
+                    {% endfor %}
+                {% else %}
+                    <pre>{{ regulation.data }}</pre>
+                {% endif %}
+            {% else %}
+                <p>Регламент отсутствует. Вы можете заполнить его вручную.</p>
+            {% endif %}
+        </div>
+
+        <!-- Режим редактирования (скрыт по умолчанию) -->
+        <div id="edit-mode" style="display:none;">
+            <form method="POST" action="{{ url_for('admin.save_regulation', dev_id=developer.id) }}">
+                <h5>internal_regulation</h5>
+                {% set internal_fields = [
+                    'company', 'fixation_address', 'fixation_period', 'commerce_fixation',
+                    'foreign_numbers_fixation', 'cross_fixation', 'fixation_start',
+                    'uniqueness_extension', 'viewing_appointment', 'escort_required',
+                    'inspection_report_required', 'developer_emails', 'response_time', 'notes'
+                ] %}
+                {% for field in internal_fields %}
+                <div class="mb-3">
+                    <label class="form-label">{{ field }}</label>
+                    <input type="text" class="form-control" name="internal_regulation.{{ field }}" value="{{ regulation.data.internal_regulation[field] if regulation and regulation.data and regulation.data.internal_regulation else '' }}">
+                </div>
+                {% endfor %}
+
+                <h5>booking_regulation</h5>
+                {% set booking_fields = ['how_to_update_tariffs', 'how_to_update_remains'] %}
+                {% for field in booking_fields %}
+                <div class="mb-3">
+                    <label class="form-label">{{ field }}</label>
+                    <input type="text" class="form-control" name="booking_regulation.{{ field }}" value="{{ regulation.data.booking_regulation[field] if regulation and regulation.data and regulation.data.booking_regulation else '' }}">
+                </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-success">Сохранить</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="toggleEdit()">Отмена</button>
+            </form>
         </div>
     </div>
-    {% endif %}
-{% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleEdit() {
+        document.getElementById('view-mode').style.display =
+            document.getElementById('view-mode').style.display === 'none' ? 'block' : 'none';
+        document.getElementById('edit-mode').style.display =
+            document.getElementById('edit-mode').style.display === 'none' ? 'block' : 'none';
+    }
+    // Если URL содержит параметр ?edit=1, сразу показать форму
+    if (new URLSearchParams(window.location.search).has('edit')) {
+        toggleEdit();
+    }
+</script>
 {% endblock %}
