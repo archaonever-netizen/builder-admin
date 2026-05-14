@@ -31,8 +31,9 @@ class Contact(db.Model):
 
 class Document(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(300))
-    filepath = db.Column(db.String(500))
+    filename = db.Column(db.String(300))          # UUID или идентификатор в Supabase
+    original_filename = db.Column(db.String(300)) # Оригинальное имя файла
+    filepath = db.Column(db.String(500))          # Публичная ссылка
     doc_type = db.Column(db.String(50))
     developer_id = db.Column(db.Integer, db.ForeignKey('developer.id'))
 
