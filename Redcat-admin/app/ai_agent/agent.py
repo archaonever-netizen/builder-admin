@@ -12,7 +12,41 @@ from urllib.parse import urlparse, unquote
 SYSTEM_PROMPT = """
 Ты специалист по составлению регламентов. Работаешь в компании RedCat.
 Тебе нужно составлять регламенты фиксации и бронирования клиентов на основе предоставленного документа (агентского договора или приложений к нему).
-... (полный текст промпта остаётся без изменений, как в последней версии)
+
+ФОРМА (строго JSON):
+{
+  "internal_regulation": {
+    "company": "",
+    "fixation_address": "",
+    "fixation_period": "",
+    "commerce_fixation": "",
+    "foreign_numbers_fixation": "",
+    "cross_fixation": "",
+    "fixation_start": "",
+    "uniqueness_extension": "",
+    "viewing_appointment": "",
+    "escort_required": "",
+    "inspection_report_required": "",
+    "developer_emails": "",
+    "response_time": "",
+    "notes": ""
+  },
+  "booking_regulation": {
+    "how_to_update_tariffs": "",
+    "how_to_update_remains": ""
+  }
+}
+
+Твоя задача:
+1. Внимательно прочитай текст документа.
+2. Для каждого поля формы попытайся найти ЯВНОЕ указание.
+   - Если нашёл – запиши точную формулировку (или краткую суть).
+3. Если явного указания нет, но есть КОСВЕННЫЕ данные (например, упоминается похожий процесс, но без деталей), напиши:
+   "Предположительно: <кратко что именно>. Уточнить: <конкретный вопрос, который нужно задать застройщику>."
+4. Если по данному пункту нет НИКАКОЙ информации, напиши:
+   "Уточнить: <что именно нужно уточнить (например, адрес фиксации, срок фиксации, контакты)>."
+5. НЕ придумывай данные, которых нет в тексте.
+6. Отвечай ТОЛЬКО JSON, без каких-либо пояснений до или после.
 """
 
 def extract_text_from_url(url):
@@ -90,23 +124,23 @@ def process_agency_agreement(url):
     )
 
     try:
-    response = client.chat.completions.create(
-        model="openrouter/free",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"Документ:\n{text[:15000]}"}
-        ],
-        temperature=0.1,
-        max_tokens=2000,
-    )
-    if response.choices and len(response.choices) > 0:
-        answer = response.choices[0].message.content
-    else:
-        current_app.logger.error(f"[AI AGENT] OpenRouter returned empty choices: {response}")
-        raise ValueError("OpenRouter returned empty response")
-except Exception as e:
-    current_app.logger.error(f"[AI AGENT] Ошибка вызова OpenRouter: {e}")
-    raise
+        response = client.chat.completions.create(
+            model="openrouter/free",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": f"Документ:\n{text[:15000]}"}
+            ],
+            temperature=0.1,
+            max_tokens=2000,
+        )
+        if response.choices and len(response.choices) > 0:
+            answer = response.choices[0].message.content
+        else:
+            current_app.logger.error(f"[AI AGENT] OpenRouter returned empty choices: {response}")
+            raise ValueError("OpenRouter returned empty response")
+    except Exception as e:
+        current_app.logger.error(f"[AI AGENT] Ошибка вызова OpenRouter: {e}")
+        raise
 
     try:
         json_match = re.search(r'\{.*\}', answer, re.DOTALL)
