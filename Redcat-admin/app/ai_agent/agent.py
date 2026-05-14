@@ -90,20 +90,23 @@ def process_agency_agreement(url):
     )
 
     try:
-        response = client.chat.completions.create(
-            model="openrouter/free",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": f"Документ:\n{text[:15000]}"}
-            ],
-            temperature=0.1,
-            max_tokens=2000,
-        )
+    response = client.chat.completions.create(
+        model="openrouter/free",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": f"Документ:\n{text[:15000]}"}
+        ],
+        temperature=0.1,
+        max_tokens=2000,
+    )
+    if response.choices and len(response.choices) > 0:
         answer = response.choices[0].message.content
-        current_app.logger.info(f"[AI AGENT] Raw answer (first 800 chars): {answer[:800]}")
-    except Exception as e:
-        current_app.logger.error(f"[AI AGENT] Ошибка вызова OpenRouter: {e}")
-        raise
+    else:
+        current_app.logger.error(f"[AI AGENT] OpenRouter returned empty choices: {response}")
+        raise ValueError("OpenRouter returned empty response")
+except Exception as e:
+    current_app.logger.error(f"[AI AGENT] Ошибка вызова OpenRouter: {e}")
+    raise
 
     try:
         json_match = re.search(r'\{.*\}', answer, re.DOTALL)
