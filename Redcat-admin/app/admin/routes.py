@@ -44,10 +44,30 @@ def upload_file():
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No filename'}), 400
-    filename = str(uuid.uuid4()) + '_' + file.filename
-    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-    file.save(filepath)
-    return jsonify({'filename': file.filename, 'path': filepath, 'id': filename})
+
+    # Генерация уникального имени файла
+    original_filename = file.filename
+    file_extension = original_filename.rsplit('.', 1)[-1] if '.' in original_filename else ''
+    unique_filename = f"{uuid.uuid4()}.{file_extension}" if file_extension else str(uuid.uuid4())
+
+    try:
+        # Загружаем файл в Supabase Storage в бакет "developer-docs"
+        file_bytes = file.read()
+        current_app.supabase.storage.from_('developer-docs').upload(
+            unique_filename,
+            file_bytes,
+            {"content-type": file.content_type}
+        )
+        # Получаем публичный URL загруженного файла
+        public_url = current_app.supabase.storage.from_('developer-docs').get_public_url(unique_filename)
+
+        return jsonify({
+            'id': unique_filename,
+            'filename': original_filename,
+            'path': public_url
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @admin_bp.route('/submit', methods=['POST'])
 def submit_developer():
