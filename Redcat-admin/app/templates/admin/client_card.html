@@ -22,27 +22,157 @@
     </div>
 </div>
 
-{% if developer.complexes %}
+<!-- Жилые комплексы -->
 <div class="card mb-3">
-    <div class="card-header">Жилые комплексы</div>
-    <ul class="list-group list-group-flush">
-        {% for rc in developer.complexes %}
-        <li class="list-group-item">{{ rc.name }} | Комиссия: {{ rc.commission }} | Куратор: {{ rc.contact_person }}</li>
-        {% endfor %}
-    </ul>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        Жилые комплексы
+        <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#addComplexModal">+ Добавить ЖК</button>
+    </div>
+    <div class="card-body">
+        {% if developer.complexes %}
+        <ul class="list-group list-group-flush">
+            {% for rc in developer.complexes %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>{{ rc.name }} | Комиссия: {{ rc.commission }}% | Куратор: {{ rc.contact_person }}</span>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editComplexModal{{ rc.id }}">✎</button>
+                    <form action="{{ url_for('admin.delete_complex', complex_id=rc.id) }}" method="POST" onsubmit="return confirm('Удалить ЖК {{ rc.name }}?')">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                    </form>
+                </div>
+            </li>
+            <!-- Модальное окно редактирования ЖК -->
+            <div class="modal fade" id="editComplexModal{{ rc.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="POST" action="{{ url_for('admin.edit_complex', complex_id=rc.id) }}">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Редактировать ЖК</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="text" class="form-control mb-2" name="name" value="{{ rc.name }}" placeholder="Название">
+                                <input type="number" step="0.01" class="form-control mb-2" name="commission" value="{{ rc.commission }}" placeholder="Комиссия">
+                                <input type="text" class="form-control" name="contact_person" value="{{ rc.contact_person }}" placeholder="Куратор">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-primary">Сохранить</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>Нет жилых комплексов.</p>
+        {% endif %}
+    </div>
 </div>
-{% endif %}
 
-{% if developer.contacts %}
-<div class="card mb-3">
-    <div class="card-header">Контакты</div>
-    <ul class="list-group list-group-flush">
-        {% for c in developer.contacts %}
-        <li class="list-group-item">{{ c.contact_type }} — {{ c.name }}{% if c.phone %}, {{ c.phone }}{% endif %}{% if c.email %}, {{ c.email }}{% endif %}</li>
-        {% endfor %}
-    </ul>
+<!-- Модальное окно добавления ЖК -->
+<div class="modal fade" id="addComplexModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.add_complex', dev_id=developer.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить ЖК</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-2" name="name" placeholder="Название" required>
+                    <input type="number" step="0.01" class="form-control mb-2" name="commission" placeholder="Комиссия">
+                    <input type="text" class="form-control" name="contact_person" placeholder="Куратор">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
-{% endif %}
+
+<!-- Контакты -->
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        Контакты
+        <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#addContactModal">+ Добавить контакт</button>
+    </div>
+    <div class="card-body">
+        {% if developer.contacts %}
+        <ul class="list-group list-group-flush">
+            {% for c in developer.contacts %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>{{ c.contact_type }} — {{ c.name }}{% if c.phone %}, {{ c.phone }}{% endif %}{% if c.email %}, {{ c.email }}{% endif %}</span>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editContactModal{{ c.id }}">✎</button>
+                    <form action="{{ url_for('admin.delete_contact', contact_id=c.id) }}" method="POST" onsubmit="return confirm('Удалить контакт {{ c.name }}?')">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                    </form>
+                </div>
+            </li>
+            <!-- Модальное окно редактирования контакта -->
+            <div class="modal fade" id="editContactModal{{ c.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="POST" action="{{ url_for('admin.edit_contact', contact_id=c.id) }}">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Редактировать контакт</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <select class="form-select mb-2" name="contact_type">
+                                    <option value="curator" {% if c.contact_type == 'curator' %}selected{% endif %}>Куратор</option>
+                                    <option value="rop" {% if c.contact_type == 'rop' %}selected{% endif %}>РОП</option>
+                                    <option value="partner_head" {% if c.contact_type == 'partner_head' %}selected{% endif %}>Рук. партнёрского отдела</option>
+                                    <option value="doc_flow" {% if c.contact_type == 'doc_flow' %}selected{% endif %}>Документооборот</option>
+                                </select>
+                                <input type="text" class="form-control mb-2" name="name" value="{{ c.name }}" placeholder="Имя">
+                                <input type="tel" class="form-control mb-2 phone-mask" name="phone" value="{{ c.phone }}" placeholder="+7(999)123-45-67">
+                                <input type="email" class="form-control" name="email" value="{{ c.email }}" placeholder="Email">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-primary">Сохранить</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>Нет контактов.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Модальное окно добавления контакта -->
+<div class="modal fade" id="addContactModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.add_contact', dev_id=developer.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить контакт</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <select class="form-select mb-2" name="contact_type">
+                        <option value="curator">Куратор</option>
+                        <option value="rop">РОП</option>
+                        <option value="partner_head">Рук. партнёрского отдела</option>
+                        <option value="doc_flow">Документооборот</option>
+                    </select>
+                    <input type="text" class="form-control mb-2" name="name" placeholder="Имя" required>
+                    <input type="tel" class="form-control mb-2 phone-mask" name="phone" placeholder="+7(999)123-45-67">
+                    <input type="email" class="form-control" name="email" placeholder="Email">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <!-- Документы -->
 <div class="card mb-3">
@@ -54,7 +184,7 @@
         <div id="upload-form-card" style="display:none; margin-bottom:1rem;">
             <form action="{{ url_for('admin.upload_for_developer', dev_id=developer.id) }}" method="POST" enctype="multipart/form-data">
                 <input type="file" name="file" class="form-control mb-2" required>
-                <button type="submit" class="btn btn-primary btn-sm">Загрузить и обработать ИИ</button>
+                <button type="submit" class="btn btn-primary btn-sm">Загрузить</button>
                 <button type="button" class="btn btn-outline-secondary btn-sm" onclick="this.parentElement.parentElement.style.display='none'">Отмена</button>
             </form>
         </div>
@@ -63,7 +193,12 @@
             {% for doc in developer.documents %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
                 <span>{{ doc.original_filename or doc.filename }}</span>
-                <a href="{{ doc.filepath }}" class="btn btn-outline-primary btn-sm" target="_blank">Скачать</a>
+                <div class="btn-group btn-group-sm">
+                    <a href="{{ doc.filepath }}" class="btn btn-outline-primary btn-sm" target="_blank">Скачать</a>
+                    <form action="{{ url_for('admin.delete_document', dev_id=developer.id, doc_id=doc.id) }}" method="POST" onsubmit="return confirm('Удалить файл {{ doc.original_filename or doc.filename }}?')">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                    </form>
+                </div>
             </li>
             {% endfor %}
         </ul>
@@ -73,60 +208,32 @@
     </div>
 </div>
 
-<!-- Регламент -->
+<!-- Регламент фиксации -->
 <div class="card mb-3">
     <div class="card-header d-flex justify-content-between align-items-center">
-        Регламент фиксации и бронирования
+        <span>
+            Регламент фиксации и бронирования
+            <span id="regulation-status-badge">
+                {% if regulation and regulation.status == 'Выполнено' %}
+                    <span class="badge bg-success">Выполнено</span>
+                {% elif regulation and regulation.status and regulation.status != 'Выполнено' %}
+                    <span class="badge bg-info" id="status-text">{{ regulation.status }}</span>
+                {% elif regulation and regulation.data %}
+                    <span class="badge bg-secondary">Заполнено вручную</span>
+                {% else %}
+                    <span class="badge bg-secondary">Не заполнен</span>
+                {% endif %}
+            </span>
+        </span>
         <div>
-            {% if regulation %}
-                <span class="badge bg-info">ИИ-обработка</span>
-                <button class="btn btn-outline-secondary btn-sm" onclick="toggleEdit()">Редактировать</button>
-            {% elif developer.documents %}
-                <span class="badge bg-warning text-dark">Обрабатывается ИИ...</span>
-                <button class="btn btn-outline-secondary btn-sm" onclick="toggleEdit()">Заполнить вручную</button>
-            {% else %}
-                <span class="badge bg-secondary">Не заполнен</span>
-                <button class="btn btn-outline-secondary btn-sm" onclick="toggleEdit()">Заполнить вручную</button>
-            {% endif %}
+            <button class="btn btn-outline-secondary btn-sm" id="toggle-regulation-btn">Регламент фиксации</button>
+            <button class="btn btn-outline-primary btn-sm" id="auto-fill-btn">Заполнить автоматически</button>
         </div>
     </div>
     <div class="card-body">
-        <div id="view-mode" {% if not regulation and not show_edit %}style="display:none"{% endif %}>
-            {% if regulation %}
-                {% if regulation.data is mapping %}
-                    {% for section, fields in regulation.data.items() %}
-                        <h5>{{ section }}</h5>
-                        <dl class="row">
-                            {% for key, val in fields.items() %}
-                                <dt class="col-sm-4">{{ key }}</dt>
-                                <dd class="col-sm-8">
-                                    {% if val is string and val.startswith('Уточнить') %}
-                                        <span class="badge bg-warning text-dark me-2">Уточнить</span>
-                                        {{ val[9:] if val|length > 9 else val }}
-                                    {% elif val is string and val.startswith('Предположительно') %}
-                                        <span class="badge bg-info text-dark me-2">Косвенно</span>
-                                        {{ val }}
-                                    {% else %}
-                                        {{ val if val else '—' }}
-                                    {% endif %}
-                                </dd>
-                            {% endfor %}
-                        </dl>
-                    {% endfor %}
-                {% else %}
-                    <pre>{{ regulation.data }}</pre>
-                {% endif %}
-            {% else %}
-                {% if developer.documents %}
-                    <p>ИИ-агент обрабатывает загруженный договор. Обновите страницу через минуту.</p>
-                {% else %}
-                    <p>Регламент отсутствует. Вы можете заполнить его вручную.</p>
-                {% endif %}
-            {% endif %}
-        </div>
-
-        <div id="edit-mode" style="display:none;">
-            <form method="POST" action="{{ url_for('admin.save_regulation', dev_id=developer.id) }}">
+        <!-- Форма регламента (скрыта по умолчанию) -->
+        <div id="regulation-form" style="display: none;">
+            <form id="regulation-manual-form" method="POST" action="{{ url_for('admin.save_regulation', dev_id=developer.id) }}">
                 <h5>internal_regulation</h5>
                 {% set internal_fields = [
                     'company', 'fixation_address', 'fixation_period', 'commerce_fixation',
@@ -151,23 +258,91 @@
                 {% endfor %}
 
                 <button type="submit" class="btn btn-success">Сохранить</button>
-                <button type="button" class="btn btn-outline-secondary" onclick="toggleEdit()">Отмена</button>
             </form>
+        </div>
+        <!-- Сообщение о статусе -->
+        <div id="regulation-view">
+            {% if regulation and regulation.data is mapping %}
+                {% for section, fields in regulation.data.items() %}
+                    <h5>{{ section }}</h5>
+                    <dl class="row">
+                        {% for key, val in fields.items() %}
+                            <dt class="col-sm-4">{{ key }}</dt>
+                            <dd class="col-sm-8">
+                                {% if val is string and val.startswith('Уточнить') %}
+                                    <span class="badge bg-warning text-dark me-2">Уточнить</span>
+                                    {{ val[9:] if val|length > 9 else val }}
+                                {% elif val is string and val.startswith('Предположительно') %}
+                                    <span class="badge bg-info text-dark me-2">Косвенно</span>
+                                    {{ val }}
+                                {% else %}
+                                    {{ val if val else '—' }}
+                                {% endif %}
+                            </dd>
+                        {% endfor %}
+                    </dl>
+                {% endfor %}
+            {% elif regulation and regulation.raw_response %}
+                <pre>{{ regulation.raw_response }}</pre>
+            {% else %}
+                <p>Нет данных регламента.</p>
+            {% endif %}
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8-beta.17/jquery.inputmask.min.js"></script>
 <script>
-    function toggleEdit() {
-        document.getElementById('view-mode').style.display =
-            document.getElementById('view-mode').style.display === 'none' ? 'block' : 'none';
-        document.getElementById('edit-mode').style.display =
-            document.getElementById('edit-mode').style.display === 'none' ? 'block' : 'none';
-    }
-    if (new URLSearchParams(window.location.search).has('edit')) {
-        toggleEdit();
+    // Маска для телефона
+    $(document).ready(function(){
+        $(".phone-mask").inputmask("+7(999)999-99-99");
+    });
+
+    // Переключение формы регламента
+    const toggleBtn = document.getElementById('toggle-regulation-btn');
+    const formDiv = document.getElementById('regulation-form');
+    const viewDiv = document.getElementById('regulation-view');
+    toggleBtn.addEventListener('click', function(){
+        if (formDiv.style.display === 'none') {
+            formDiv.style.display = 'block';
+            viewDiv.style.display = 'none';
+        } else {
+            formDiv.style.display = 'none';
+            viewDiv.style.display = 'block';
+        }
+    });
+
+    // Автоматическое заполнение
+    const autoBtn = document.getElementById('auto-fill-btn');
+    autoBtn.addEventListener('click', function(){
+        fetch('{{ url_for("admin.auto_regulation", dev_id=developer.id) }}', { method: 'POST' })
+        .then(() => {
+            // Начинаем опрос статуса
+            pollStatus();
+        });
+    });
+
+    function pollStatus() {
+        const statusUrl = '{{ url_for("admin.regulation_status", dev_id=developer.id) }}';
+        fetch(statusUrl)
+        .then(r => r.json())
+        .then(data => {
+            const status = data.status;
+            const badge = document.getElementById('status-text');
+            if (badge) {
+                badge.textContent = status;
+            } else {
+                document.getElementById('regulation-status-badge').innerHTML = `<span class="badge bg-info" id="status-text">${status}</span>`;
+            }
+            if (status === 'Выполнено' || status.startsWith('Ошибка')) {
+                // Перезагрузим страницу через 2 секунды, чтобы увидеть результат
+                setTimeout(() => { location.reload(); }, 2000);
+            } else {
+                setTimeout(pollStatus, 3000);
+            }
+        });
     }
 </script>
 {% endblock %}
