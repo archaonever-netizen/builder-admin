@@ -31,9 +31,9 @@ class Contact(db.Model):
 
 class Document(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(300))          # UUID или идентификатор в Supabase
-    original_filename = db.Column(db.String(300)) # Оригинальное имя файла
-    filepath = db.Column(db.String(500))          # Публичная ссылка
+    filename = db.Column(db.String(300))
+    original_filename = db.Column(db.String(300))
+    filepath = db.Column(db.String(500))
     doc_type = db.Column(db.String(50))
     developer_id = db.Column(db.Integer, db.ForeignKey('developer.id'))
 
@@ -41,6 +41,7 @@ class Regulation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     data = db.Column(db.JSON)
     raw_text = db.Column(db.Text)
+    status = db.Column(db.String(50), default='')   # <-- новое поле
     developer_id = db.Column(db.Integer, db.ForeignKey('developer.id'), unique=True)
 
 class Draft(db.Model):
