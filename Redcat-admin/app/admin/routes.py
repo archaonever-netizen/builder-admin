@@ -5,13 +5,11 @@ from app.admin import admin_bp
 from app.models import Developer, ResidentialComplex, Contact, Document, Regulation, Draft
 from app.ai_agent.agent import process_agency_agreement
 
-# Главная страница
 @admin_bp.route('/')
 def index():
     developers = Developer.query.order_by(Developer.created_at.desc()).all()
     return render_template('admin/index.html', developers=developers)
 
-# Добавление нового застройщика (GET/POST)
 @admin_bp.route('/add', methods=['GET', 'POST'])
 def add_developer():
     if 'draft_token' not in session:
@@ -20,7 +18,6 @@ def add_developer():
     draft_data = draft.data if draft else {}
     return render_template('admin/add_developer.html', draft=draft_data)
 
-# Черновики
 @admin_bp.route('/api/draft', methods=['POST', 'GET'])
 def draft_api():
     if 'draft_token' not in session:
@@ -40,7 +37,6 @@ def draft_api():
         draft = Draft.query.filter_by(session_token=token).first()
         return jsonify(draft.data if draft else {})
 
-# Загрузка файла (с возвратом оригинального имени)
 @admin_bp.route('/api/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -70,7 +66,6 @@ def upload_file():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Завершение создания застройщика
 @admin_bp.route('/submit', methods=['POST'])
 def submit_developer():
     data = request.form.to_dict(flat=True)
@@ -86,7 +81,6 @@ def submit_developer():
     db.session.add(dev)
     db.session.flush()
 
-    # ЖК
     complexes_json = data.get('complexes', '[]')
     try:
         complexes = json.loads(complexes_json)
@@ -101,7 +95,6 @@ def submit_developer():
     except:
         pass
 
-    # Контакты
     contacts_json = data.get('contacts', '[]')
     try:
         contacts = json.loads(contacts_json)
@@ -117,7 +110,6 @@ def submit_developer():
     except:
         pass
 
-    # Документы (теперь с оригинальными именами)
     doc_ids = request.form.getlist('doc_ids[]')
     doc_names = request.form.getlist('doc_names[]')
     for i, doc_id in enumerate(doc_ids):
@@ -133,38 +125,126 @@ def submit_developer():
         db.session.add(doc)
     db.session.commit()
 
-    # Запуск ИИ, если нет регламента и есть документ
+    # Запуск ИИ, если нет регламента и есть документы
     existing_regulation = Regulation.query.filter_by(developer_id=dev.id).first()
-    agency_doc = Document.query.filter_by(developer_id=dev.id, doc_type='agency_contract').first()
-    if agency_doc and not existing_regulation:
+    agency_docs = Document.query.filter_by(developer_id=dev.id, doc_type='agency_contract').all()
+    if agency_docs and not existing_regulation:
         app = current_app._get_current_object()
         def run_ai():
             with app.app_context():
+                urls = [doc.filepath for doc in agency_docs]
+                reg = Regulation(status="Анализирую", developer_id=dev.id, data={})
+                db.session.add(reg)
+                db.session.commit()
                 try:
-                    regulation_fields = process_agency_agreement(agency_doc.filepath)
-                    reg = Regulation(
-                        data=regulation_fields,
-                        raw_text='',
-                        developer_id=dev.id
-                    )
-                    db.session.add(reg)
+                    reg.status = "Систематизация"
                     db.session.commit()
+                    result = process_agency_agreement(urls)
+                    reg.status = "Заполнение"
+                    db.session.commit()
+                    reg.data = result
+                    reg.status = "Выполнено"
                 except Exception as e:
-                    app.logger.error(f"AI Agent background error: {e}")
+                    reg.status = f"Ошибка: {e}"
+                db.session.commit()
         thread = threading.Thread(target=run_ai)
         thread.daemon = True
         thread.start()
 
     return redirect(url_for('admin.client_card', dev_id=dev.id))
 
-# Просмотр карточки
 @admin_bp.route('/client/<int:dev_id>')
 def client_card(dev_id):
     dev = Developer.query.get_or_404(dev_id)
     regulation = Regulation.query.filter_by(developer_id=dev_id).first()
     return render_template('admin/client_card.html', developer=dev, regulation=regulation)
 
-# Ручное сохранение регламента
+# ---------- CRUD для ЖК ----------
+@admin_bp.route('/client/<int:dev_id>/complex/add', methods=['POST'])
+def add_complex(dev_id):
+    dev = Developer.query.get_or_404(dev_id)
+    name = request.form.get('name')
+    commission = request.form.get('commission')  # число
+    contact_person = request.form.get('contact_person')
+    if name:
+        rc = ResidentialComplex(
+            name=name,
+            commission=commission,
+            contact_person=contact_person,
+            developer_id=dev.id
+        )
+        db.session.add(rc)
+        db.session.commit()
+    return redirect(url_for('admin.client_card', dev_id=dev_id))
+
+@admin_bp.route('/complex/<int:complex_id>/edit', methods=['POST'])
+def edit_complex(complex_id):
+    rc = ResidentialComplex.query.get_or_404(complex_id)
+    rc.name = request.form.get('name')
+    rc.commission = request.form.get('commission')
+    rc.contact_person = request.form.get('contact_person')
+    db.session.commit()
+    return redirect(url_for('admin.client_card', dev_id=rc.developer_id))
+
+@admin_bp.route('/complex/<int:complex_id>/delete', methods=['POST'])
+def delete_complex(complex_id):
+    rc = ResidentialComplex.query.get_or_404(complex_id)
+    dev_id = rc.developer_id
+    db.session.delete(rc)
+    db.session.commit()
+    return redirect(url_for('admin.client_card', dev_id=dev_id))
+
+# ---------- CRUD для Контактов ----------
+@admin_bp.route('/client/<int:dev_id>/contact/add', methods=['POST'])
+def add_contact(dev_id):
+    dev = Developer.query.get_or_404(dev_id)
+    contact_type = request.form.get('contact_type')
+    name = request.form.get('name')
+    phone = request.form.get('phone')
+    email = request.form.get('email')
+    if name:
+        c = Contact(
+            contact_type=contact_type,
+            name=name,
+            phone=phone,
+            email=email,
+            developer_id=dev.id
+        )
+        db.session.add(c)
+        db.session.commit()
+    return redirect(url_for('admin.client_card', dev_id=dev_id))
+
+@admin_bp.route('/contact/<int:contact_id>/edit', methods=['POST'])
+def edit_contact(contact_id):
+    c = Contact.query.get_or_404(contact_id)
+    c.contact_type = request.form.get('contact_type')
+    c.name = request.form.get('name')
+    c.phone = request.form.get('phone')
+    c.email = request.form.get('email')
+    db.session.commit()
+    return redirect(url_for('admin.client_card', dev_id=c.developer_id))
+
+@admin_bp.route('/contact/<int:contact_id>/delete', methods=['POST'])
+def delete_contact(contact_id):
+    c = Contact.query.get_or_404(contact_id)
+    dev_id = c.developer_id
+    db.session.delete(c)
+    db.session.commit()
+    return redirect(url_for('admin.client_card', dev_id=dev_id))
+
+# ---------- Удаление документа ----------
+@admin_bp.route('/client/<int:dev_id>/document/<int:doc_id>/delete', methods=['POST'])
+def delete_document(dev_id, doc_id):
+    doc = Document.query.get_or_404(doc_id)
+    try:
+        current_app.supabase.storage.from_('developer-docs').remove([doc.filename])
+    except Exception as e:
+        current_app.logger.error(f"Ошибка удаления файла {doc.filename}: {e}")
+    db.session.delete(doc)
+    db.session.commit()
+    return redirect(url_for('admin.client_card', dev_id=dev_id))
+
+# ---------- Регламент ----------
 @admin_bp.route('/client/<int:dev_id>/regulation', methods=['POST'])
 def save_regulation(dev_id):
     dev = Developer.query.get_or_404(dev_id)
@@ -182,13 +262,57 @@ def save_regulation(dev_id):
     reg = Regulation.query.filter_by(developer_id=dev_id).first()
     if reg:
         reg.data = regulation_data
+        reg.status = ''  # сбросить статус после ручного сохранения
     else:
-        reg = Regulation(data=regulation_data, raw_text='', developer_id=dev_id)
+        reg = Regulation(data=regulation_data, status='', developer_id=dev_id)
         db.session.add(reg)
     db.session.commit()
     return redirect(url_for('admin.client_card', dev_id=dev_id))
 
-# Редактирование застройщика (GET – форма, POST – сохранение)
+@admin_bp.route('/client/<int:dev_id>/regulation/auto', methods=['POST'])
+def auto_regulation(dev_id):
+    dev = Developer.query.get_or_404(dev_id)
+    docs = Document.query.filter_by(developer_id=dev_id, doc_type='agency_contract').all()
+    if not docs:
+        return redirect(url_for('admin.client_card', dev_id=dev_id))
+
+    reg = Regulation.query.filter_by(developer_id=dev_id).first()
+    if not reg:
+        reg = Regulation(developer_id=dev_id, data={}, status='')
+        db.session.add(reg)
+    reg.status = "Анализирую"
+    db.session.commit()
+
+    app = current_app._get_current_object()
+    urls = [doc.filepath for doc in docs]
+    def run_auto():
+        with app.app_context():
+            reg_local = Regulation.query.filter_by(developer_id=dev_id).first()
+            if not reg_local:
+                return
+            try:
+                reg_local.status = "Систематизация"
+                db.session.commit()
+                result = process_agency_agreement(urls)
+                reg_local.status = "Заполнение"
+                db.session.commit()
+                reg_local.data = result
+                reg_local.status = "Выполнено"
+            except Exception as e:
+                reg_local.status = f"Ошибка: {e}"
+            db.session.commit()
+    thread = threading.Thread(target=run_auto)
+    thread.daemon = True
+    thread.start()
+    return redirect(url_for('admin.client_card', dev_id=dev_id))
+
+@admin_bp.route('/client/<int:dev_id>/regulation/status')
+def regulation_status(dev_id):
+    reg = Regulation.query.filter_by(developer_id=dev_id).first()
+    status = reg.status if reg else ''
+    return jsonify({'status': status})
+
+# Редактирование/удаление застройщика (без изменений)
 @admin_bp.route('/client/<int:dev_id>/edit', methods=['GET', 'POST'])
 def edit_developer(dev_id):
     dev = Developer.query.get_or_404(dev_id)
@@ -201,63 +325,14 @@ def edit_developer(dev_id):
         return redirect(url_for('admin.client_card', dev_id=dev.id))
     return render_template('admin/edit_developer.html', developer=dev)
 
-# Удаление застройщика
 @admin_bp.route('/client/<int:dev_id>/delete', methods=['POST'])
 def delete_developer(dev_id):
     dev = Developer.query.get_or_404(dev_id)
+    for doc in dev.documents:
+        try:
+            current_app.supabase.storage.from_('developer-docs').remove([doc.filename])
+        except Exception as e:
+            current_app.logger.error(f"Не удалось удалить файл {doc.filename}: {e}")
     db.session.delete(dev)
     db.session.commit()
     return redirect(url_for('admin.index'))
-
-# Загрузка документа в существующую карточку и запуск ИИ
-@admin_bp.route('/client/<int:dev_id>/upload', methods=['POST'])
-def upload_for_developer(dev_id):
-    dev = Developer.query.get_or_404(dev_id)
-    if 'file' not in request.files:
-        return redirect(url_for('admin.client_card', dev_id=dev_id))
-    file = request.files['file']
-    if file.filename == '':
-        return redirect(url_for('admin.client_card', dev_id=dev_id))
-
-    original_filename = file.filename
-    file_extension = original_filename.rsplit('.', 1)[-1] if '.' in original_filename else ''
-    unique_filename = f"{uuid.uuid4()}.{file_extension}" if file_extension else str(uuid.uuid4())
-
-    try:
-        file_bytes = file.read()
-        current_app.supabase.storage.from_('developer-docs').upload(
-            unique_filename,
-            file_bytes,
-            {"content-type": file.content_type}
-        )
-        public_url = current_app.supabase.storage.from_('developer-docs').get_public_url(unique_filename)
-        doc = Document(
-            filename=unique_filename,
-            original_filename=original_filename,
-            filepath=public_url,
-            doc_type='agency_contract',
-            developer_id=dev.id
-        )
-        db.session.add(doc)
-        db.session.commit()
-
-        # Запускаем ИИ, если ещё нет регламента
-        existing_reg = Regulation.query.filter_by(developer_id=dev.id).first()
-        if not existing_reg:
-            app = current_app._get_current_object()
-            def run_ai():
-                with app.app_context():
-                    try:
-                        regulation_fields = process_agency_agreement(public_url)
-                        reg = Regulation(data=regulation_fields, raw_text='', developer_id=dev.id)
-                        db.session.add(reg)
-                        db.session.commit()
-                    except Exception as e:
-                        app.logger.error(f"AI Agent background error: {e}")
-            thread = threading.Thread(target=run_ai)
-            thread.daemon = True
-            thread.start()
-    except Exception as e:
-        current_app.logger.error(f"Upload error: {e}")
-
-    return redirect(url_for('admin.client_card', dev_id=dev_id))
