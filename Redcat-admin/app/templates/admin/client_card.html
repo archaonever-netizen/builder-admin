@@ -45,37 +45,41 @@
 
 <!-- Жилые комплексы -->
 <div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center" id="headingComplexes">
-        <span>
-            Жилые комплексы: {{ developer.complexes|length }},
-            Комиссия: {{ developer.complexes|map(attribute='commission')|reject('none')|list|min if developer.complexes|map(attribute='commission')|reject('none')|list else '—' }}{% if developer.complexes|map(attribute='commission')|reject('none')|list|length > 1 %}-{{ developer.complexes|map(attribute='commission')|reject('none')|list|max }}{% endif %}%,
-            Город: {{ developer.complexes|map(attribute='city')|reject('none')|unique|join(', ') or '—' }},
-            Тип недвижимости: {{ developer.complexes|map(attribute='property_type')|reject('none')|unique|join(', ') or '—' }}
-        </span>
-        <div>
-            <button class="btn btn-outline-success btn-sm me-2" data-bs-toggle="modal" data-bs-target="#addComplexModal">+ Добавить ЖК</button>
-            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#collapseComplexes" aria-expanded="false" aria-controls="collapseComplexes">
-                ↕
-            </button>
-        </div>
-    </div>
-    <div id="collapseComplexes" class="collapse" aria-labelledby="headingComplexes">
-        <div class="card-body">
-            {% if developer.complexes %}
+    <div class="card-header p-0" id="headingComplexes">
+    <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseComplexes" aria-expanded="false" aria-controls="collapseComplexes" style="cursor: pointer;">
+        <div class="flex-fill p-3">
             <div class="table-responsive">
-                <table class="table table-sm table-borderless align-middle text-center">
+                <table class="table table-sm table-borderless align-middle text-center mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Название ЖК</th>
-                            <th>Комиссия</th>
-                            <th>Город</th>
-                            <th>Регион</th>
-                            <th>Тип</th>
-                            <th>Куратор</th>
-                            <th></th>
+                            <th>ЖК: {{ developer.complexes|length }}</th>
+                            <th>Комиссия: {{ developer.complexes|map(attribute='commission')|reject('none')|list|min if developer.complexes|map(attribute='commission')|reject('none')|list else '—' }}{% if developer.complexes|map(attribute='commission')|reject('none')|list|length > 1 %}-{{ developer.complexes|map(attribute='commission')|reject('none')|list|max }}{% endif %}%</th>
+                            <th>Город: {{ developer.complexes|map(attribute='city')|reject('none')|unique|join(', ') or '—' }}</th>
+                            <th>Регион: {{ developer.complexes|map(attribute='region')|reject('none')|unique|join(', ') or '—' }}</th>
+                            <th>Тип: {{ developer.complexes|map(attribute='property_type')|reject('none')|unique|join(', ') or '—' }}</th>
+                            <th>Куратор: {{ developer.complexes|map(attribute='contact_person')|reject('none')|unique|join(', ') or '—' }}</th>
                         </tr>
                     </thead>
-                    <tbody>
+                </table>
+            </div>
+        </div>
+        <div class="p-3 d-flex align-items-center border-start">
+            <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapseComplexes">↕</button>
+        </div>
+    </div>
+</div>
+<div id="collapseComplexes" class="collapse" aria-labelledby="headingComplexes">
+    <div class="card-body">
+        <button class="btn btn-outline-success btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#addComplexModal">+ Добавить ЖК</button>
+        {% if developer.complexes %}
+        <div class="table-responsive">
+            <table class="table table-sm table-borderless align-middle text-center">
+                <thead class="table-light">
+                    <tr>
+                        <th>Название</th><th>Комиссия</th><th>Город</th><th>Регион</th><th>Тип</th><th>Куратор</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
                         {% for rc in developer.complexes %}
                         <tr>
                             <td>{{ rc.name }}</td>
@@ -93,44 +97,46 @@
                         </tr>
                         {% endfor %}
                     </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p>Нет жилых комплексов.</p>
-            {% endif %}
+            </table>
         </div>
+        {% else %}
+        <p>Нет жилых комплексов.</p>
+        {% endif %}
     </div>
+</div>
 </div>
 
 <!-- Контакты -->
 <div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center" id="headingContacts">
-        <span>
-            Контакты: {{ developer.contacts|length }},
-            Ответственные: {{ developer.contacts|map(attribute='contact_type')|unique|list|map('replace', 'curator', 'Куратор')|map('replace', 'rop', 'РОП')|map('replace', 'partner_head', 'Рук. парт. отдела')|map('replace', 'doc_flow', 'Документооборот')|join(', ') or '—' }}
-        </span>
-        <div>
-            <button class="btn btn-outline-success btn-sm me-2" data-bs-toggle="modal" data-bs-target="#addContactModal">+ Добавить контакт</button>
-            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#collapseContacts" aria-expanded="false" aria-controls="collapseContacts">
-                ↕
-            </button>
-        </div>
-    </div>
-    <div id="collapseContacts" class="collapse" aria-labelledby="headingContacts">
-        <div class="card-body">
-            {% if developer.contacts %}
+    <div class="card-header p-0" id="headingContacts">
+    <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseContacts" aria-expanded="false" aria-controls="collapseContacts" style="cursor: pointer;">
+        <div class="flex-fill p-3">
             <div class="table-responsive">
-                <table class="table table-sm table-borderless align-middle text-center">
+                <table class="table table-sm table-borderless align-middle text-center mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Роль</th>
-                            <th>Имя</th>
-                            <th>Телефон</th>
-                            <th>Email</th>
-                            <th></th>
+                            <th>Контакты: {{ developer.contacts|length }}</th>
+                            <th>Ответственные: {{ developer.contacts|map(attribute='contact_type')|unique|list|map('replace', 'curator', 'Куратор')|map('replace', 'rop', 'РОП')|map('replace', 'partner_head', 'Рук. парт. отдела')|map('replace', 'doc_flow', 'Документооборот')|join(', ') or '—' }}</th>
                         </tr>
                     </thead>
-                    <tbody>
+                </table>
+            </div>
+        </div>
+        <div class="p-3 d-flex align-items-center border-start">
+            <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapseContacts">↕</button>
+        </div>
+    </div>
+</div>
+<div id="collapseContacts" class="collapse" aria-labelledby="headingContacts">
+    <div class="card-body">
+        <button class="btn btn-outline-success btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#addContactModal">+ Добавить контакт</button>
+        {% if developer.contacts %}
+        <div class="table-responsive">
+            <table class="table table-sm table-borderless align-middle text-center">
+                <thead class="table-light">
+                    <tr><th>Роль</th><th>Имя</th><th>Телефон</th><th>Email</th><th></th></tr>
+                </thead>
+                <tbody>
                         {% for c in developer.contacts %}
                         <tr>
                             <td>{{ contact_types_ru.get(c.contact_type, c.contact_type) }}</td>
@@ -145,68 +151,72 @@
                             </td>
                         </tr>
                         {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p>Нет контактов.</p>
-            {% endif %}
+                   </tbody>
+            </table>
         </div>
+        {% else %}
+        <p>Нет контактов.</p>
+        {% endif %}
     </div>
+</div>
 </div>
 
 <!-- Документы -->
 <div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center" id="headingDocuments">
-        <span>
-            Документы: {{ developer.documents|length }}
-        </span>
-        <div>
-            <button class="btn btn-outline-success btn-sm me-2" onclick="document.getElementById('upload-form-card').style.display='block'">+ Добавить файл</button>
-            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDocuments" aria-expanded="false" aria-controls="collapseDocuments">
-                ↕
-            </button>
-        </div>
-    </div>
-    <div id="collapseDocuments" class="collapse" aria-labelledby="headingDocuments">
-        <div class="card-body">
-            <div id="upload-form-card" style="display:none; margin-bottom:1rem;">
-                <form action="{{ url_for('admin.upload_for_developer', dev_id=developer.id) }}" method="POST" enctype="multipart/form-data">
-                    <input type="file" name="files" class="form-control mb-2" multiple required>
-                    <div class="d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="this.parentElement.parentElement.parentElement.style.display='none'">Отмена</button>
-                        <button type="submit" class="btn btn-primary btn-sm">Загрузить</button>
-                    </div>
-                </form>
-            </div>
-            {% if developer.documents %}
+    <div class="card-header p-0" id="headingDocuments">
+    <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseDocuments" aria-expanded="false" aria-controls="collapseDocuments" style="cursor: pointer;">
+        <div class="flex-fill p-3">
             <div class="table-responsive">
-                <table class="table table-sm table-borderless align-middle text-center">
+                <table class="table table-sm table-borderless align-middle text-center mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Файл</th>
-                            <th></th>
+                            <th>Документы: {{ developer.documents|length }}</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for doc in developer.documents %}
-                        <tr>
-                            <td>{{ doc.original_filename or doc.filename }}</td>
-                            <td>
-                                <a href="{{ doc.filepath }}" class="btn btn-outline-primary btn-sm" target="_blank">Скачать</a>
-                                <form action="{{ url_for('admin.delete_document', dev_id=developer.id, doc_id=doc.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить файл {{ doc.original_filename or doc.filename }}?')">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
                 </table>
             </div>
-            {% else %}
-            <p>Нет прикреплённых документов.</p>
-            {% endif %}
         </div>
+        <div class="p-3 d-flex align-items-center border-start">
+            <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapseDocuments">↕</button>
+        </div>
+    </div>
+</div>
+<div id="collapseDocuments" class="collapse" aria-labelledby="headingDocuments">
+    <div class="card-body">
+        <button class="btn btn-outline-success btn-sm mb-2" onclick="document.getElementById('upload-form-card').style.display='block'">+ Добавить файл</button>
+        <div id="upload-form-card" style="display:none; margin-bottom:1rem;">
+            <form action="{{ url_for('admin.upload_for_developer', dev_id=developer.id) }}" method="POST" enctype="multipart/form-data">
+                <input type="file" name="files" class="form-control mb-2" multiple required>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('upload-form-card').style.display='none'">Отмена</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Загрузить</button>
+                </div>
+            </form>
+        </div>
+        {% if developer.documents %}
+        <div class="table-responsive">
+            <table class="table table-sm table-borderless align-middle text-center">
+                <thead class="table-light">
+                    <tr><th>Файл</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for doc in developer.documents %}
+                    <tr>
+                        <td>{{ doc.original_filename or doc.filename }}</td>
+                        <td>
+                            <a href="{{ doc.filepath }}" class="btn btn-outline-primary btn-sm" target="_blank">Скачать</a>
+                            <form action="{{ url_for('admin.delete_document', dev_id=developer.id, doc_id=doc.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить файл {{ doc.original_filename or doc.filename }}?')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>Нет прикреплённых документов.</p>
+        {% endif %}
     </div>
 </div>
 
