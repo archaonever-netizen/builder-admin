@@ -54,11 +54,9 @@ def extract_text_from_url(url):
     try:
         response = requests.get(url)
         response.raise_for_status()
-        # Извлекаем имя файла из URL, очищая query-параметры
         parsed = urlparse(url)
         path = unquote(parsed.path)
         filename = path.split('/')[-1]
-        # Удаляем возможный "?" и всё после него
         filename = filename.split('?')[0]
         ext = os.path.splitext(filename)[1].lower()
         file_content = io.BytesIO(response.content)
@@ -102,17 +100,20 @@ def extract_text_from_url(url):
     except Exception as e:
         raise ValueError(f"Не удалось извлечь текст из документа: {e}")
 
-def process_agency_agreement(url):
-    """Обрабатывает агентский договор, доступный по публичному URL."""
-    try:
-        text = extract_text_from_url(url)
-        if not text.strip():
-            raise ValueError("Извлечённый текст пуст.")
-    except Exception as e:
-        current_app.logger.error(f"[AI AGENT] Ошибка извлечения текста: {e}")
-        raise
-
-    current_app.logger.info(f"[AI AGENT] Extracted text (first 800 chars): {text[:800]}")
+def process_agency_agreement(urls):
+    """Обрабатывает несколько файлов, объединяя текст."""
+    all_text = []
+    for url in urls:
+        try:
+            text = extract_text_from_url(url)
+            if text.strip():
+                all_text.append(text)
+        except Exception as e:
+            current_app.logger.error(f"[AI AGENT] Ошибка извлечения из {url}: {e}")
+    if not all_text:
+        raise ValueError("Не удалось извлечь текст ни из одного файла")
+    combined_text = '\n\n'.join(all_text)
+    current_app.logger.info(f"[AI AGENT] Extracted total text length: {len(combined_text)} chars")
 
     client = OpenAI(
         api_key=current_app.config['OPENROUTER_API_KEY'],
@@ -128,7 +129,7 @@ def process_agency_agreement(url):
             model="openrouter/free",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": f"Документ:\n{text[:15000]}"}
+                {"role": "user", "content": f"Документ:\n{combined_text[:15000]}"}
             ],
             temperature=0.1,
             max_tokens=2000,
@@ -136,11 +137,9 @@ def process_agency_agreement(url):
         if response.choices and len(response.choices) > 0:
             answer = response.choices[0].message.content
         else:
-            current_app.logger.error(f"[AI AGENT] OpenRouter returned empty choices: {response}")
             raise ValueError("OpenRouter returned empty response")
     except Exception as e:
-        current_app.logger.error(f"[AI AGENT] Ошибка вызова OpenRouter: {e}")
-        raise
+        raise RuntimeError(f"Ошибка вызова OpenRouter: {e}")
 
     try:
         json_match = re.search(r'\{.*\}', answer, re.DOTALL)
@@ -148,8 +147,6 @@ def process_agency_agreement(url):
             json_str = json_match.group()
             return json.loads(json_str)
         else:
-            current_app.logger.warning("[AI AGENT] JSON не найден в ответе, возвращаю raw_response.")
             return {"raw_response": answer}
     except Exception as e:
-        current_app.logger.error(f"[AI AGENT] Ошибка парсинга JSON: {e}")
-        return {"raw_response": answer}
+        raise RuntimeError(f"Ошибка парсинга JSON: {e}")
