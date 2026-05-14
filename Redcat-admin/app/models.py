@@ -11,12 +11,17 @@ class Developer(db.Model):
     regulation = db.relationship('Regulation', backref='developer', uselist=False, cascade="all, delete-orphan")
     channels = db.Column(db.Text)
     chessboard_link = db.Column(db.String(500))
+    chessboard_updated = db.Column(db.DateTime)
     feed = db.Column(db.Text)
+    feed_updated = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class ResidentialComplex(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200))
+    city = db.Column(db.String(200))
+    region = db.Column(db.String(200))
+    property_type = db.Column(db.String(200))
     commission = db.Column(db.String(100))
     contact_person = db.Column(db.String(200))
     developer_id = db.Column(db.Integer, db.ForeignKey('developer.id'))
@@ -41,7 +46,7 @@ class Regulation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     data = db.Column(db.JSON)
     raw_text = db.Column(db.Text)
-    status = db.Column(db.String(50), default='')   # <-- новое поле
+    status = db.Column(db.String(50), default='')
     developer_id = db.Column(db.Integer, db.ForeignKey('developer.id'), unique=True)
 
 class Draft(db.Model):
