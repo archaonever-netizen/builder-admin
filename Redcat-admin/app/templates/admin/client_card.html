@@ -56,5 +56,14 @@
         {% endif %}
     </div>
 </div>
+{% else %}
+    {% if developer.documents %}
+    <div class="card mb-3">
+        <div class="card-header">Регламент фиксации и бронирования <span class="badge bg-warning text-dark">Обрабатывается...</span></div>
+        <div class="card-body">
+            <p>ИИ-агент обрабатывает загруженный договор. Пожалуйста, обновите страницу через минуту.</p>
+        </div>
+    </div>
+    {% endif %}
 {% endif %}
 {% endblock %}
