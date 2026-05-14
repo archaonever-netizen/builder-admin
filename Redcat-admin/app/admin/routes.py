@@ -6,7 +6,7 @@ from app.admin import admin_bp
 from app.models import Developer, ResidentialComplex, Contact, Document, Regulation, Draft
 from app.ai_agent.agent import process_agency_agreement
 
-CONTACT_TYPES = {
+CONTACT_TYPES_RU = {
     'curator': 'Куратор',
     'rop': 'РОП',
     'partner_head': 'Руководитель партнёрского отдела',
@@ -141,7 +141,7 @@ def submit_developer():
 def client_card(dev_id):
     dev = Developer.query.get_or_404(dev_id)
     regulation = Regulation.query.filter_by(developer_id=dev_id).first()
-    return render_template('admin/client_card.html', developer=dev, regulation=regulation, contact_types=CONTACT_TYPES)
+    return render_template('admin/client_card.html', developer=dev, regulation=regulation, contact_types_ru=CONTACT_TYPES_RU)
 
 # CRUD для ЖК
 @admin_bp.route('/client/<int:dev_id>/complex/add', methods=['POST'])
@@ -327,10 +327,14 @@ def edit_developer(dev_id):
     if request.method == 'POST':
         dev.name = request.form.get('name')
         dev.channels = request.form.get('channels')
-        dev.chessboard_link = request.form.get('chessboard_link')
-        dev.chessboard_updated = datetime.utcnow() if request.form.get('chessboard_link') != dev.chessboard_link else dev.chessboard_updated
-        dev.feed = request.form.get('feed')
-        dev.feed_updated = datetime.utcnow() if request.form.get('feed') != dev.feed else dev.feed_updated
+        new_chessboard = request.form.get('chessboard_link')
+        if new_chessboard != dev.chessboard_link:
+            dev.chessboard_updated = datetime.utcnow()
+        dev.chessboard_link = new_chessboard
+        new_feed = request.form.get('feed')
+        if new_feed != dev.feed:
+            dev.feed_updated = datetime.utcnow()
+        dev.feed = new_feed
         db.session.commit()
         return redirect(url_for('admin.client_card', dev_id=dev.id))
     return render_template('admin/edit_developer.html', developer=dev)
