@@ -244,6 +244,43 @@ def delete_document(dev_id, doc_id):
     db.session.commit()
     return redirect(url_for('admin.client_card', dev_id=dev_id))
 
+# ---------- Загрузка документа в существующую карточку ----------
+@admin_bp.route('/client/<int:dev_id>/upload', methods=['POST'])
+def upload_for_developer(dev_id):
+    dev = Developer.query.get_or_404(dev_id)
+    if 'file' not in request.files:
+        return redirect(url_for('admin.client_card', dev_id=dev_id))
+    file = request.files['file']
+    if file.filename == '':
+        return redirect(url_for('admin.client_card', dev_id=dev_id))
+
+    original_filename = file.filename
+    file_extension = original_filename.rsplit('.', 1)[-1] if '.' in original_filename else ''
+    unique_filename = f"{uuid.uuid4()}.{file_extension}" if file_extension else str(uuid.uuid4())
+
+    try:
+        file_bytes = file.read()
+        current_app.supabase.storage.from_('developer-docs').upload(
+            unique_filename,
+            file_bytes,
+            {"content-type": file.content_type}
+        )
+        public_url = current_app.supabase.storage.from_('developer-docs').get_public_url(unique_filename)
+        doc = Document(
+            filename=unique_filename,
+            original_filename=original_filename,
+            filepath=public_url,
+            doc_type='agency_contract',
+            developer_id=dev.id
+        )
+        db.session.add(doc)
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(f"Upload error: {e}")
+
+    return redirect(url_for('admin.client_card', dev_id=dev_id))
+
+
 # ---------- Регламент ----------
 @admin_bp.route('/client/<int:dev_id>/regulation', methods=['POST'])
 def save_regulation(dev_id):
