@@ -225,39 +225,43 @@
                 {% endif %}
             </span>
         </span>
-        <div>
-            <button class="btn btn-outline-secondary btn-sm" id="toggle-regulation-btn">Регламент фиксации</button>
-            <button class="btn btn-outline-primary btn-sm" id="auto-fill-btn">Заполнить автоматически</button>
-        </div>
+        <button class="btn btn-outline-secondary btn-sm" id="toggle-regulation-btn">Регламент фиксации</button>
     </div>
     <div class="card-body">
-        <!-- Форма регламента (скрыта по умолчанию) -->
+        <!-- Форма регламента (свёрнута по умолчанию) -->
         <div id="regulation-form" style="display: none;">
             <form id="regulation-manual-form" method="POST" action="{{ url_for('admin.save_regulation', dev_id=developer.id) }}">
                 <h5>internal_regulation</h5>
-                {% set internal_fields = [
-                    'company', 'fixation_address', 'fixation_period', 'commerce_fixation',
-                    'foreign_numbers_fixation', 'cross_fixation', 'fixation_start',
-                    'uniqueness_extension', 'viewing_appointment', 'escort_required',
-                    'inspection_report_required', 'developer_emails', 'response_time', 'notes'
-                ] %}
-                {% for field in internal_fields %}
-                <div class="mb-3">
-                    <label class="form-label">{{ field }}</label>
-                    <input type="text" class="form-control" name="internal_regulation.{{ field }}" value="{{ regulation.data.internal_regulation[field] if regulation and regulation.data and regulation.data.internal_regulation else '' }}">
+                <div id="internal-fields">
+                    {% set internal_fields = [
+                        'company', 'fixation_address', 'fixation_period', 'commerce_fixation',
+                        'foreign_numbers_fixation', 'cross_fixation', 'fixation_start',
+                        'uniqueness_extension', 'viewing_appointment', 'escort_required',
+                        'inspection_report_required', 'developer_emails', 'response_time', 'notes'
+                    ] %}
+                    {% for field in internal_fields %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ field }}</label>
+                        <input type="text" class="form-control regulation-field" name="internal_regulation.{{ field }}" value="{{ regulation.data.internal_regulation[field] if regulation and regulation.data and regulation.data.internal_regulation else '' }}">
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
 
                 <h5>booking_regulation</h5>
-                {% set booking_fields = ['how_to_update_tariffs', 'how_to_update_remains'] %}
-                {% for field in booking_fields %}
-                <div class="mb-3">
-                    <label class="form-label">{{ field }}</label>
-                    <input type="text" class="form-control" name="booking_regulation.{{ field }}" value="{{ regulation.data.booking_regulation[field] if regulation and regulation.data and regulation.data.booking_regulation else '' }}">
+                <div id="booking-fields">
+                    {% set booking_fields = ['how_to_update_tariffs', 'how_to_update_remains'] %}
+                    {% for field in booking_fields %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ field }}</label>
+                        <input type="text" class="form-control regulation-field" name="booking_regulation.{{ field }}" value="{{ regulation.data.booking_regulation[field] if regulation and regulation.data and regulation.data.booking_regulation else '' }}">
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
 
-                <button type="submit" class="btn btn-success">Сохранить</button>
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-success">Сохранить вручную</button>
+                    <button type="button" id="start-auto-btn" class="btn btn-outline-primary">Заполнить автоматически</button>
+                </div>
             </form>
         </div>
         <!-- Сообщение о статусе -->
@@ -293,56 +297,60 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8-beta.17/jquery.inputmask.min.js"></script>
 <script>
-    // Маска для телефона
-    $(document).ready(function(){
-        $(".phone-mask").inputmask("+7(999)999-99-99");
-    });
-
-    // Переключение формы регламента
-    const toggleBtn = document.getElementById('toggle-regulation-btn');
-    const formDiv = document.getElementById('regulation-form');
-    const viewDiv = document.getElementById('regulation-view');
-    toggleBtn.addEventListener('click', function(){
-        if (formDiv.style.display === 'none') {
-            formDiv.style.display = 'block';
-            viewDiv.style.display = 'none';
+    // Кнопка "Регламент фиксации"
+    document.getElementById('toggle-regulation-btn').addEventListener('click', function() {
+        var form = document.getElementById('regulation-form');
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
         } else {
-            formDiv.style.display = 'none';
-            viewDiv.style.display = 'block';
+            form.style.display = 'none';
         }
     });
 
-    // Автоматическое заполнение
-    const autoBtn = document.getElementById('auto-fill-btn');
-    autoBtn.addEventListener('click', function(){
-        fetch('{{ url_for("admin.auto_regulation", dev_id=developer.id) }}', { method: 'POST' })
-        .then(() => {
-            // Начинаем опрос статуса
-            pollStatus();
-        });
-    });
+    // Запуск автоматического заполнения
+    document.getElementById('start-auto-btn').addEventListener('click', function() {
+        var devId = '{{ developer.id }}';
+        var startUrl = '/admin/client/' + devId + '/regulation/start';
+        var statusUrl = '/admin/client/' + devId + '/regulation/status';
+        var statusBadge = document.getElementById('regulation-status-badge');
+        var autoBtn = this;
 
-    function pollStatus() {
-        const statusUrl = '{{ url_for("admin.regulation_status", dev_id=developer.id) }}';
-        fetch(statusUrl)
-        .then(r => r.json())
-        .then(data => {
-            const status = data.status;
-            const badge = document.getElementById('status-text');
-            if (badge) {
-                badge.textContent = status;
-            } else {
-                document.getElementById('regulation-status-badge').innerHTML = `<span class="badge bg-info" id="status-text">${status}</span>`;
-            }
-            if (status === 'Выполнено' || status.startsWith('Ошибка')) {
-                // Перезагрузим страницу через 2 секунды, чтобы увидеть результат
-                setTimeout(() => { location.reload(); }, 2000);
-            } else {
-                setTimeout(pollStatus, 3000);
-            }
-        });
-    }
+        // Блокировка полей
+        var fields = document.querySelectorAll('.regulation-field');
+        fields.forEach(function(f) { f.disabled = true; f.style.backgroundColor = '#e9ecef'; });
+        autoBtn.disabled = true;
+
+        fetch(startUrl, { method: 'POST' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.error) {
+                    alert(data.error);
+                    autoBtn.disabled = false;
+                    fields.forEach(function(f) { f.disabled = false; f.style.backgroundColor = ''; });
+                    return;
+                }
+                // Опрос статуса
+                function poll() {
+                    fetch(statusUrl)
+                        .then(function(r) { return r.json(); })
+                        .then(function(d) {
+                            autoBtn.textContent = d.status;
+                            if (d.status === 'Выполнено' || d.status.startsWith('Ошибка')) {
+                                autoBtn.textContent = 'Заполнить автоматически';
+                                autoBtn.disabled = false;
+                                fields.forEach(function(f) { f.disabled = false; f.style.backgroundColor = ''; });
+                                // Обновляем страницу, чтобы увидеть данные
+                                if (d.status === 'Выполнено') {
+                                    location.reload();
+                                }
+                            } else {
+                                setTimeout(poll, 3000);
+                            }
+                        });
+                }
+                poll();
+            });
+    });
 </script>
 {% endblock %}
