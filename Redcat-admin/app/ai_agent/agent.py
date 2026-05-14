@@ -50,7 +50,6 @@ SYSTEM_PROMPT = """
 """
 
 def extract_text_from_url(url):
-    """Извлекает текст из файла, доступного по URL."""
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -101,7 +100,6 @@ def extract_text_from_url(url):
         raise ValueError(f"Не удалось извлечь текст из документа: {e}")
 
 def process_agency_agreement(urls):
-    """Обрабатывает несколько файлов, объединяя текст."""
     all_text = []
     for url in urls:
         try:
