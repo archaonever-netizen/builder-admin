@@ -45,46 +45,171 @@
 
 <!-- Жилые комплексы -->
 <div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header d-flex justify-content-between align-items-center" id="headingComplexes">
         <span>
             Жилые комплексы: {{ developer.complexes|length }},
             Комиссия: {{ developer.complexes|map(attribute='commission')|reject('none')|list|min if developer.complexes|map(attribute='commission')|reject('none')|list else '—' }}{% if developer.complexes|map(attribute='commission')|reject('none')|list|length > 1 %}-{{ developer.complexes|map(attribute='commission')|reject('none')|list|max }}{% endif %}%,
             Город: {{ developer.complexes|map(attribute='city')|reject('none')|unique|join(', ') or '—' }},
             Тип недвижимости: {{ developer.complexes|map(attribute='property_type')|reject('none')|unique|join(', ') or '—' }}
         </span>
-        <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#addComplexModal">+ Добавить ЖК</button>
-    </div>
-    <div class="card-body">
-        {% if developer.complexes %}
-        <div class="accordion" id="complexesAccordion">
-            {% for rc in developer.complexes %}
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseComplex{{ rc.id }}">
-                        {{ rc.name }} | Комиссия: {{ rc.commission }}% | Город: {{ rc.city or '—' }}
-                    </button>
-                </h2>
-                <div id="collapseComplex{{ rc.id }}" class="accordion-collapse collapse" data-bs-parent="#complexesAccordion">
-                    <div class="accordion-body">
-                        <p><strong>Регион:</strong> {{ rc.region or '—' }}</p>
-                        <p><strong>Тип недвижимости:</strong> {{ rc.property_type or '—' }}</p>
-                        <p><strong>Куратор:</strong> {{ rc.contact_person or '—' }}</p>
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editComplexModal{{ rc.id }}">✎</button>
-                            <form action="{{ url_for('admin.delete_complex', complex_id=rc.id) }}" method="POST" onsubmit="return confirm('Удалить ЖК {{ rc.name }}?')">
-                                <button type="submit" class="btn btn-outline-danger">🗑</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
+        <div>
+            <button class="btn btn-outline-success btn-sm me-2" data-bs-toggle="modal" data-bs-target="#addComplexModal">+ Добавить ЖК</button>
+            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#collapseComplexes" aria-expanded="false" aria-controls="collapseComplexes">
+                ↕
+            </button>
         </div>
-        {% else %}
-        <p>Нет жилых комплексов.</p>
-        {% endif %}
+    </div>
+    <div id="collapseComplexes" class="collapse" aria-labelledby="headingComplexes">
+        <div class="card-body">
+            {% if developer.complexes %}
+            <div class="table-responsive">
+                <table class="table table-sm table-borderless align-middle text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Название ЖК</th>
+                            <th>Комиссия</th>
+                            <th>Город</th>
+                            <th>Регион</th>
+                            <th>Тип</th>
+                            <th>Куратор</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rc in developer.complexes %}
+                        <tr>
+                            <td>{{ rc.name }}</td>
+                            <td>{{ rc.commission }}%</td>
+                            <td>{{ rc.city or '—' }}</td>
+                            <td>{{ rc.region or '—' }}</td>
+                            <td>{{ rc.property_type or '—' }}</td>
+                            <td>{{ rc.contact_person or '—' }}</td>
+                            <td>
+                                <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editComplexModal{{ rc.id }}">✎</button>
+                                <form action="{{ url_for('admin.delete_complex', complex_id=rc.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить ЖК {{ rc.name }}?')">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>Нет жилых комплексов.</p>
+            {% endif %}
+        </div>
     </div>
 </div>
+
+<!-- Контакты -->
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center" id="headingContacts">
+        <span>
+            Контакты: {{ developer.contacts|length }},
+            Ответственные: {{ developer.contacts|map(attribute='contact_type')|unique|list|map('replace', 'curator', 'Куратор')|map('replace', 'rop', 'РОП')|map('replace', 'partner_head', 'Рук. парт. отдела')|map('replace', 'doc_flow', 'Документооборот')|join(', ') or '—' }}
+        </span>
+        <div>
+            <button class="btn btn-outline-success btn-sm me-2" data-bs-toggle="modal" data-bs-target="#addContactModal">+ Добавить контакт</button>
+            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#collapseContacts" aria-expanded="false" aria-controls="collapseContacts">
+                ↕
+            </button>
+        </div>
+    </div>
+    <div id="collapseContacts" class="collapse" aria-labelledby="headingContacts">
+        <div class="card-body">
+            {% if developer.contacts %}
+            <div class="table-responsive">
+                <table class="table table-sm table-borderless align-middle text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Роль</th>
+                            <th>Имя</th>
+                            <th>Телефон</th>
+                            <th>Email</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in developer.contacts %}
+                        <tr>
+                            <td>{{ contact_types_ru.get(c.contact_type, c.contact_type) }}</td>
+                            <td>{{ c.name }}</td>
+                            <td>{{ c.phone or '—' }}</td>
+                            <td>{{ c.email or '—' }}</td>
+                            <td>
+                                <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editContactModal{{ c.id }}">✎</button>
+                                <form action="{{ url_for('admin.delete_contact', contact_id=c.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить контакт {{ c.name }}?')">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>Нет контактов.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Документы -->
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center" id="headingDocuments">
+        <span>
+            Документы: {{ developer.documents|length }}
+        </span>
+        <div>
+            <button class="btn btn-outline-success btn-sm me-2" onclick="document.getElementById('upload-form-card').style.display='block'">+ Добавить файл</button>
+            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDocuments" aria-expanded="false" aria-controls="collapseDocuments">
+                ↕
+            </button>
+        </div>
+    </div>
+    <div id="collapseDocuments" class="collapse" aria-labelledby="headingDocuments">
+        <div class="card-body">
+            <div id="upload-form-card" style="display:none; margin-bottom:1rem;">
+                <form action="{{ url_for('admin.upload_for_developer', dev_id=developer.id) }}" method="POST" enctype="multipart/form-data">
+                    <input type="file" name="files" class="form-control mb-2" multiple required>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="this.parentElement.parentElement.parentElement.style.display='none'">Отмена</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Загрузить</button>
+                    </div>
+                </form>
+            </div>
+            {% if developer.documents %}
+            <div class="table-responsive">
+                <table class="table table-sm table-borderless align-middle text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Файл</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in developer.documents %}
+                        <tr>
+                            <td>{{ doc.original_filename or doc.filename }}</td>
+                            <td>
+                                <a href="{{ doc.filepath }}" class="btn btn-outline-primary btn-sm" target="_blank">Скачать</a>
+                                <form action="{{ url_for('admin.delete_document', dev_id=developer.id, doc_id=doc.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить файл {{ doc.original_filename or doc.filename }}?')">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>Нет прикреплённых документов.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
 
 <!-- Модальное окно добавления ЖК -->
 <div class="modal fade" id="addComplexModal" tabindex="-1">
@@ -119,46 +244,6 @@
     </div>
 </div>
 
-<!-- Контакты -->
-<div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span>
-            Контакты: {{ developer.contacts|length }},
-            Ответственные: {{ developer.contacts|map(attribute='contact_type')|unique|list|map('replace', 'curator', 'Куратор')|map('replace', 'rop', 'РОП')|map('replace', 'partner_head', 'Рук. парт. отдела')|map('replace', 'doc_flow', 'Документооборот')|join(', ') or '—' }}
-        </span>
-        <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#addContactModal">+ Добавить контакт</button>
-    </div>
-    <div class="card-body">
-        {% if developer.contacts %}
-        <div class="accordion" id="contactsAccordion">
-            {% for c in developer.contacts %}
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseContact{{ c.id }}">
-                        {{ contact_types_ru.get(c.contact_type, c.contact_type) }} — {{ c.name }}
-                    </button>
-                </h2>
-                <div id="collapseContact{{ c.id }}" class="accordion-collapse collapse" data-bs-parent="#contactsAccordion">
-                    <div class="accordion-body">
-                        <p><strong>Телефон:</strong> {{ c.phone or '—' }}</p>
-                        <p><strong>Email:</strong> {{ c.email or '—' }}</p>
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editContactModal{{ c.id }}">✎</button>
-                            <form action="{{ url_for('admin.delete_contact', contact_id=c.id) }}" method="POST" onsubmit="return confirm('Удалить контакт {{ c.name }}?')">
-                                <button type="submit" class="btn btn-outline-danger">🗑</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <p>Нет контактов.</p>
-        {% endif %}
-    </div>
-</div>
-
 <!-- Модальное окно добавления контакта -->
 <div class="modal fade" id="addContactModal" tabindex="-1">
     <div class="modal-dialog">
@@ -184,42 +269,6 @@
                 </div>
             </form>
         </div>
-    </div>
-</div>
-
-<!-- Документы -->
-<div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        Документы
-        <button class="btn btn-outline-success btn-sm" onclick="document.getElementById('upload-form-card').style.display='block'">+ Добавить файл</button>
-    </div>
-    <div class="card-body">
-        <div id="upload-form-card" style="display:none; margin-bottom:1rem;">
-            <form action="{{ url_for('admin.upload_for_developer', dev_id=developer.id) }}" method="POST" enctype="multipart/form-data">
-                <input type="file" name="files" class="form-control mb-2" multiple required>
-                <div class="d-flex justify-content-end gap-2">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="this.parentElement.parentElement.parentElement.style.display='none'">Отмена</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Загрузить</button>
-                </div>
-            </form>
-        </div>
-        {% if developer.documents %}
-        <ul class="list-group list-group-flush">
-            {% for doc in developer.documents %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span>{{ doc.original_filename or doc.filename }}</span>
-                <div class="btn-group btn-group-sm">
-                    <a href="{{ doc.filepath }}" class="btn btn-outline-primary btn-sm" target="_blank">Скачать</a>
-                    <form action="{{ url_for('admin.delete_document', dev_id=developer.id, doc_id=doc.id) }}" method="POST" onsubmit="return confirm('Удалить файл {{ doc.original_filename or doc.filename }}?')">
-                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
-                    </form>
-                </div>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p>Нет прикреплённых документов.</p>
-        {% endif %}
     </div>
 </div>
 
