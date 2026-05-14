@@ -83,7 +83,7 @@ def process_agency_agreement(url):
     )
 
     response = client.chat.completions.create(
-        model="meta-llama/llama-3.3-70b-instruct:free",
+        model="google/gemini-2.5-flash-lite-preview-05-06:free",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"Документ:\n{text[:15000]}"}
