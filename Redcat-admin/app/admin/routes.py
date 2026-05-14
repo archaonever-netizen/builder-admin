@@ -1,4 +1,7 @@
-import json, os, uuid
+import json
+import os
+import uuid
+import threading
 from flask import (render_template, request, jsonify, session, redirect, url_for, current_app)
 from app import db
 from app.admin import admin_bp
@@ -115,32 +118,39 @@ def submit_developer():
 
     doc_ids = request.form.getlist('doc_ids[]')
     for doc_id in doc_ids:
-        # Получаем публичный URL из Supabase Storage
         public_url = current_app.supabase.storage.from_('developer-docs').get_public_url(doc_id)
         doc = Document(
-            filename=doc_id,          # уникальное имя файла в хранилище
-            filepath=public_url,      # публичная ссылка
+            filename=doc_id,
+            filepath=public_url,
             doc_type='agency_contract',
             developer_id=dev.id
         )
         db.session.add(doc)
     db.session.commit()
 
+    # Запуск ИИ-агента в фоновом потоке
     agency_doc = Document.query.filter_by(developer_id=dev.id, doc_type='agency_contract').first()
-    regulation_data = None
     if agency_doc:
-        try:
-            regulation_fields = process_agency_agreement(agency_doc.filepath)
-            reg = Regulation(
-                data=regulation_fields,
-                raw_text='',
-                developer_id=dev.id
-            )
-            db.session.add(reg)
-            db.session.commit()
-            regulation_data = regulation_fields
-        except Exception as e:
-            current_app.logger.error(f"AI Agent error: {e}")
+        # Захватываем текущее приложение, чтобы использовать его в потоке
+        app = current_app._get_current_object()
+        
+        def run_ai():
+            try:
+                with app.app_context():
+                    regulation_fields = process_agency_agreement(agency_doc.filepath)
+                    reg = Regulation(
+                        data=regulation_fields,
+                        raw_text='',
+                        developer_id=dev.id
+                    )
+                    db.session.add(reg)
+                    db.session.commit()
+            except Exception as e:
+                app.logger.error(f"AI Agent background error: {e}")
+
+        thread = threading.Thread(target=run_ai)
+        thread.daemon = True
+        thread.start()
 
     return redirect(url_for('admin.client_card', dev_id=dev.id))
 
