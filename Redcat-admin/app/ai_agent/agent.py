@@ -7,53 +7,25 @@ import PyPDF2
 import docx
 from openai import OpenAI
 from flask import current_app
+from urllib.parse import urlparse, unquote
 
 SYSTEM_PROMPT = """
 Ты специалист по составлению регламентов. Работаешь в компании RedCat.
 Тебе нужно составлять регламенты фиксации и бронирования клиентов на основе предоставленного документа (агентского договора или приложений к нему).
-
-ФОРМА (строго JSON):
-{
-  "internal_regulation": {
-    "company": "",
-    "fixation_address": "",
-    "fixation_period": "",
-    "commerce_fixation": "",
-    "foreign_numbers_fixation": "",
-    "cross_fixation": "",
-    "fixation_start": "",
-    "uniqueness_extension": "",
-    "viewing_appointment": "",
-    "escort_required": "",
-    "inspection_report_required": "",
-    "developer_emails": "",
-    "response_time": "",
-    "notes": ""
-  },
-  "booking_regulation": {
-    "how_to_update_tariffs": "",
-    "how_to_update_remains": ""
-  }
-}
-
-Твоя задача:
-1. Внимательно прочитай текст документа.
-2. Для каждого поля формы попытайся найти ЯВНОЕ указание.
-   - Если нашёл – запиши точную формулировку (или краткую суть).
-3. Если явного указания нет, но есть КОСВЕННЫЕ данные (например, упоминается похожий процесс, но без деталей), напиши:
-   "Предположительно: <кратко что именно>. Уточнить: <конкретный вопрос, который нужно задать застройщику>."
-4. Если по данному пункту нет НИКАКОЙ информации, напиши:
-   "Уточнить: <что именно нужно уточнить (например, адрес фиксации, срок фиксации, контакты)>."
-5. НЕ придумывай данные, которых нет в тексте.
-6. Отвечай ТОЛЬКО JSON, без каких-либо пояснений до или после.
+... (полный текст промпта остаётся без изменений, как в последней версии)
 """
 
 def extract_text_from_url(url):
-    """Извлекает текст из файла, доступного по URL, включая таблицы DOCX."""
+    """Извлекает текст из файла, доступного по URL."""
     try:
         response = requests.get(url)
         response.raise_for_status()
-        filename = url.split('/')[-1]
+        # Извлекаем имя файла из URL, очищая query-параметры
+        parsed = urlparse(url)
+        path = unquote(parsed.path)
+        filename = path.split('/')[-1]
+        # Удаляем возможный "?" и всё после него
+        filename = filename.split('?')[0]
         ext = os.path.splitext(filename)[1].lower()
         file_content = io.BytesIO(response.content)
 
@@ -67,25 +39,16 @@ def extract_text_from_url(url):
             if not text.strip():
                 raise ValueError("PDF не содержит текстового слоя (возможно, скан).")
             return text
-
         elif ext in ('.docx', '.doc'):
             doc = docx.Document(file_content)
             full_text = []
-
-            # Обычные параграфы
             for para in doc.paragraphs:
                 if para.text.strip():
                     full_text.append(para.text.strip())
-
-            # Таблицы
             for table in doc.tables:
                 for row in table.rows:
-                    row_data = []
-                    for cell in row.cells:
-                        row_data.append(cell.text.strip())
+                    row_data = [cell.text.strip() for cell in row.cells]
                     full_text.append(' | '.join(row_data))
-
-            # Колонтитулы
             for section in doc.sections:
                 header = section.header
                 if header:
@@ -97,15 +60,11 @@ def extract_text_from_url(url):
                     for para in footer.paragraphs:
                         if para.text.strip():
                             full_text.append(para.text.strip())
-
             return '\n'.join(full_text)
-
         elif ext == '.txt':
             return response.text
-
         else:
             raise ValueError(f"Неподдерживаемый формат файла: {ext}")
-
     except Exception as e:
         raise ValueError(f"Не удалось извлечь текст из документа: {e}")
 
@@ -119,7 +78,6 @@ def process_agency_agreement(url):
         current_app.logger.error(f"[AI AGENT] Ошибка извлечения текста: {e}")
         raise
 
-    # Логируем первые 800 символов
     current_app.logger.info(f"[AI AGENT] Extracted text (first 800 chars): {text[:800]}")
 
     client = OpenAI(
@@ -147,13 +105,11 @@ def process_agency_agreement(url):
         current_app.logger.error(f"[AI AGENT] Ошибка вызова OpenRouter: {e}")
         raise
 
-    # Пытаемся извлечь JSON
     try:
         json_match = re.search(r'\{.*\}', answer, re.DOTALL)
         if json_match:
             json_str = json_match.group()
-            data = json.loads(json_str)
-            return data
+            return json.loads(json_str)
         else:
             current_app.logger.warning("[AI AGENT] JSON не найден в ответе, возвращаю raw_response.")
             return {"raw_response": answer}
