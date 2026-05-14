@@ -295,7 +295,8 @@
         <button class="btn btn-outline-secondary btn-sm" id="toggle-regulation-btn">Регламент фиксации</button>
     </div>
     <div class="card-body">
-        <div id="regulation-form" style="display: none;">
+        <!-- Форма регламента: показывается при ручном нажатии или при статусе "Выполнено" -->
+        <div id="regulation-form" style="display: {% if regulation and regulation.status == 'Выполнено' %}block{% else %}none{% endif %};">
             <form id="regulation-manual-form" method="POST" action="{{ url_for('admin.save_regulation', dev_id=developer.id) }}">
                 <h5>Внутренний регламент</h5>
                 {% set internal_fields = [
@@ -339,7 +340,8 @@
                 </div>
             </form>
         </div>
-        <div id="regulation-view">
+        <!-- Статичный просмотр показывается только если нет данных или статус не "Выполнено" -->
+        <div id="regulation-view" style="{% if regulation and regulation.data and regulation.status != 'Выполнено' %}display: block;{% else %}display: none;{% endif %}">
             {% if regulation and regulation.data is mapping %}
                 {% for section, fields in regulation.data.items() %}
                     <h5>{{ 'Внутренний регламент' if section == 'internal_regulation' else 'Регламент бронирования' }}</h5>
@@ -489,7 +491,16 @@
                                 autoBtn.textContent = 'Заполнить автоматически';
                                 autoBtn.disabled = false;
                                 fields.forEach(function(f) { f.disabled = false; f.style.backgroundColor = ''; });
-                                if (d.status === 'Выполнено') location.reload();
+                                if (d.status === 'Выполнено') {
+    // Показать форму, скрыть просмотр, разблокировать поля
+    document.getElementById('regulation-form').style.display = 'block';
+    document.getElementById('regulation-view').style.display = 'none';
+    fields.forEach(function(f) { f.disabled = false; f.style.backgroundColor = ''; });
+    autoBtn.disabled = false;
+    autoBtn.textContent = 'Заполнить автоматически';
+    // Обновить значения полей через API или оставить как есть?
+    // При следующем открытии страницы данные подтянутся из базы.
+}
                             } else {
                                 setTimeout(poll, 3000);
                             }
