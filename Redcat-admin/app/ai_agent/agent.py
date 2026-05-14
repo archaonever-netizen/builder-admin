@@ -4,6 +4,8 @@ import json
 import PyPDF2
 import docx
 from flask import current_app
+import requests
+import io
 
 SYSTEM_PROMPT = """
 Ты специалист по составлению регламентов. Работаешь в компании RedCat.
@@ -36,26 +38,38 @@ SYSTEM_PROMPT = """
 Заполни ТОЛЬКО те поля, которые явно упомянуты в документе. Не придумывай ничего лишнего.
 """
 
-def extract_text_from_file(filepath):
-    ext = os.path.splitext(filepath)[1].lower()
-    if ext == '.pdf':
-        with open(filepath, 'rb') as f:
-            reader = PyPDF2.PdfReader(f)
+def extract_text_from_url(url):
+    """Извлекает текст из файла, доступного по URL."""
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        
+        # Определяем тип файла по расширению в URL
+        filename = url.split('/')[-1]
+        ext = os.path.splitext(filename)[1].lower()
+        
+        # Сохраняем контент в BytesIO для обработки
+        file_content = io.BytesIO(response.content)
+        
+        if ext == '.pdf':
+            reader = PyPDF2.PdfReader(file_content)
             text = ''
             for page in reader.pages:
                 page_text = page.extract_text()
                 if page_text:
                     text += page_text + '\n'
             return text
-    elif ext in ('.docx', '.doc'):
-        doc = docx.Document(filepath)
-        return '\n'.join([para.text for para in doc.paragraphs])
-    else:
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-            return f.read()
+        elif ext in ('.docx', '.doc'):
+            doc = docx.Document(file_content)
+            return '\n'.join([para.text for para in doc.paragraphs])
+        else:
+            return response.text
+    except Exception as e:
+        raise ValueError(f"Не удалось извлечь текст из документа: {e}")
 
-def process_agency_agreement(filepath):
-    text = extract_text_from_file(filepath)
+def process_agency_agreement(url):
+    """Обрабатывает агентский договор, доступный по публичному URL."""
+    text = extract_text_from_url(url)
     if not text.strip():
         raise ValueError("Не удалось извлечь текст из документа")
 
@@ -63,7 +77,7 @@ def process_agency_agreement(filepath):
         api_key=current_app.config['OPENROUTER_API_KEY'],
         base_url="https://openrouter.ai/api/v1",
         default_headers={
-            "HTTP-Referer": "https://redcat-admin.onrender.com",  # замените, если имя сервиса другое
+            "HTTP-Referer": "https://builder-admin-q7mb.onrender.com",  # Ваш актуальный URL
             "X-Title": "RedCat CRM"
         }
     )
