@@ -115,9 +115,11 @@ def submit_developer():
 
     doc_ids = request.form.getlist('doc_ids[]')
     for doc_id in doc_ids:
+        # Получаем публичный URL из Supabase Storage
+        public_url = current_app.supabase.storage.from_('developer-docs').get_public_url(doc_id)
         doc = Document(
-            filename=doc_id,
-            filepath=os.path.join(current_app.config['UPLOAD_FOLDER'], doc_id),
+            filename=doc_id,          # уникальное имя файла в хранилище
+            filepath=public_url,      # публичная ссылка
             doc_type='agency_contract',
             developer_id=dev.id
         )
@@ -126,7 +128,7 @@ def submit_developer():
 
     agency_doc = Document.query.filter_by(developer_id=dev.id, doc_type='agency_contract').first()
     regulation_data = None
-    if agency_doc and os.path.exists(agency_doc.filepath):
+    if agency_doc:
         try:
             regulation_fields = process_agency_agreement(agency_doc.filepath)
             reg = Regulation(
