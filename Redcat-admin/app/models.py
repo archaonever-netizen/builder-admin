@@ -54,3 +54,39 @@ class Draft(db.Model):
     data = db.Column(db.JSON)
     session_token = db.Column(db.String(100), index=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+# =================== МОДЕЛИ МЕНЕДЖЕРА ===================
+class Agent(db.Model):
+    """Контрагент (агентство/агент)"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(300), nullable=False)                 # Юридическое название
+    director_name = db.Column(db.String(200))                        # ФИО директора
+    director_phone = db.Column(db.String(50))                        # Телефон директора
+    contact_name = db.Column(db.String(200))                         # ФИО контактного лица
+    contact_phone = db.Column(db.String(50))                         # Телефон контактного лица
+    messenger_linked = db.Column(db.Boolean, default=True)           # Мессенджер привязан к номеру?
+    messenger_contact = db.Column(db.String(200))                    # Ссылка/номер, если не привязан
+    website = db.Column(db.String(500))                              # Сайт
+    active_agents_count = db.Column(db.Integer, default=0)           # Исходное количество (введённое)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    employees = db.relationship('Employee', backref='agent', lazy=True, cascade="all, delete-orphan")
+    presentations = db.relationship('Presentation', backref='agent', lazy=True, cascade="all, delete-orphan")
+
+class Employee(db.Model):
+    """Сотрудник агентства"""
+    id = db.Column(db.Integer, primary_key=True)
+    full_name = db.Column(db.String(200), nullable=False)
+    phone = db.Column(db.String(50))
+    messenger = db.Column(db.String(200))                            # Идентификатор мессенджера
+    fixations_count = db.Column(db.Integer, default=0)
+    bookings_count = db.Column(db.Integer, default=0)
+    deals_count = db.Column(db.Integer, default=0)
+    agent_id = db.Column(db.Integer, db.ForeignKey('agent.id'))
+
+class Presentation(db.Model):
+    """Презентации (заглушка под будущий блок)"""
+    id = db.Column(db.Integer, primary_key=True)
+    agent_id = db.Column(db.Integer, db.ForeignKey('agent.id'))
+    presentation_date = db.Column(db.Date)
+    material = db.Column(db.String(500))                             # Ссылка или описание
