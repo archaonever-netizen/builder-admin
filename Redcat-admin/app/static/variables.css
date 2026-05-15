@@ -1,0 +1,55 @@
+:root {
+  /* Основная кривая iOS */
+  --ease-ios: cubic-bezier(0.22, 1, 0.36, 1);
+  --fast-transition: 180ms var(--ease-ios);
+  --normal-transition: 280ms var(--ease-ios);
+  --slow-transition: 420ms var(--ease-ios);
+
+  /* Цвета */
+  --bg: #f4f7fc;
+  --surface: #ffffff;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --text-main: #111827;
+  --text-secondary: #6b7280;
+  --border: #e5e7eb;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --success: #22c55e;
+  --sidebar-bg: #f8fbff;
+
+  /* Тени */
+  --shadow-small: 0 2px 8px rgba(15, 23, 42, 0.03);
+  --shadow-medium: 0 6px 24px rgba(15, 23, 42, 0.05);
+  --shadow-large: 0 10px 40px rgba(15, 23, 42, 0.06);
+
+  /* Скругления */
+  --radius-12: 12px;
+  --radius-14: 14px;
+  --radius-18: 18px;
+  --radius-24: 24px;
+  --radius-28: 28px;
+  --radius-32: 32px;
+
+  /* Шрифты */
+  --font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --h1-size: 48px;
+  --h1-weight: 700;
+  --h1-line-height: 1.1;
+  --h1-spacing: -0.03em;
+
+  --h2-size: 32px;
+  --h2-weight: 700;
+
+  --text-size: 15px;
+  --text-line-height: 1.6;
+}
+
+/* Сброс */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
