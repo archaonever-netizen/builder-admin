@@ -1,34 +1,106 @@
 {% extends "base.html" %}
 {% block title %}Менеджер – Контрагенты{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Контрагенты (агентства)</h1>
-    <div>
-        <a href="{{ url_for('manager.clients_placeholder') }}" class="btn btn-outline-secondary me-2">Клиенты в работе</a>
-        <a href="{{ url_for('manager.add_agent_form') }}" class="btn btn-primary btn-lg">+ Новый контрагент</a>
-    </div>
-</div>
-{% if agents %}
-<div class="row">
-    {% for agent in agents %}
-    <div class="col-md-4 mb-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">{{ agent.name }}</h5>
-                <p class="card-text">Создан: {{ agent.created_at.strftime('%d.%m.%Y') }}</p>
-                <div class="btn-group">
-                    <a href="{{ url_for('manager.agent_card', agent_id=agent.id) }}" class="btn btn-outline-secondary btn-sm">Карточка</a>
-                    <a href="{{ url_for('manager.edit_agent', agent_id=agent.id) }}" class="btn btn-outline-warning btn-sm">✎</a>
-                    <form action="{{ url_for('manager.delete_agent', agent_id=agent.id) }}" method="POST" onsubmit="return confirm('Удалить {{ agent.name }}?')">
-                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
-                    </form>
+<div class="slider-viewport" style="overflow: hidden; position: relative;">
+    <div id="sliderTrack" style="display: flex; transition: transform 0.4s ease; width: 200%;">
+        <!-- Экран 1: Контрагенты -->
+        <div class="slider-panel" style="width: 50%; flex-shrink: 0;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Контрагенты (агентства)</h1>
+                <a href="{{ url_for('manager.add_agent_form') }}" class="btn btn-primary btn-lg">+ Новый контрагент</a>
+            </div>
+            {% if agents %}
+            <div class="row">
+                {% for agent in agents %}
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ agent.name }}</h5>
+                            <p class="card-text">Создан: {{ agent.created_at.strftime('%d.%m.%Y') }}</p>
+                            <div class="btn-group">
+                                <a href="{{ url_for('manager.agent_card', agent_id=agent.id) }}" class="btn btn-outline-secondary btn-sm">Карточка</a>
+                                <a href="{{ url_for('manager.edit_agent', agent_id=agent.id) }}" class="btn btn-outline-warning btn-sm">✎</a>
+                                <form action="{{ url_for('manager.delete_agent', agent_id=agent.id) }}" method="POST" onsubmit="return confirm('Удалить {{ agent.name }}?')">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>Нет ни одного контрагента. Нажмите «+ Новый контрагент» чтобы добавить.</p>
+            {% endif %}
+        </div>
+
+        <!-- Экран 2: Клиенты в работе -->
+        <div class="slider-panel" style="width: 50%; flex-shrink: 0;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Клиенты в работе</h1>
+            </div>
+            <div class="text-center py-5">
+                <h4 class="text-muted">Этот раздел появится в следующих обновлениях</h4>
+                <p>Здесь будет список клиентов, сделки и коммуникации.</p>
             </div>
         </div>
     </div>
-    {% endfor %}
 </div>
-{% else %}
-<p>Нет ни одного контрагента. Нажмите «+ Новый контрагент» чтобы добавить.</p>
-{% endif %}
+
+<!-- Кнопки слайдера -->
+<div class="d-flex justify-content-center my-3">
+    <button id="slideLeftBtn" class="btn btn-outline-secondary me-2" disabled style="opacity: 0.5; transition: opacity 0.2s;">←</button>
+    <button id="slideRightBtn" class="btn btn-primary" style="transition: opacity 0.2s;">→</button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+    (function() {
+        const track = document.getElementById('sliderTrack');
+        const leftBtn = document.getElementById('slideLeftBtn');
+        const rightBtn = document.getElementById('slideRightBtn');
+        let currentPanel = 0; // 0 - контрагенты, 1 - клиенты
+
+        function updateButtons() {
+            if (currentPanel === 0) {
+                leftBtn.disabled = true;
+                leftBtn.style.opacity = '0.5';
+                rightBtn.disabled = false;
+                rightBtn.style.opacity = '1';
+            } else {
+                leftBtn.disabled = false;
+                leftBtn.style.opacity = '1';
+                rightBtn.disabled = true;
+                rightBtn.style.opacity = '0.5';
+            }
+        }
+
+        function slideTo(panelIndex) {
+            track.style.transform = `translateX(-${panelIndex * 50}%)`;
+            currentPanel = panelIndex;
+            updateButtons();
+        }
+
+        leftBtn.addEventListener('click', function() {
+            if (currentPanel > 0) slideTo(currentPanel - 1);
+        });
+        rightBtn.addEventListener('click', function() {
+            if (currentPanel < 1) slideTo(currentPanel + 1); // всего 2 панели, индекс 1 - последняя
+        });
+
+        // Для свайпа на мобильных (базовая поддержка)
+        let startX = 0;
+        track.addEventListener('touchstart', function(e) {
+            startX = e.touches[0].clientX;
+        });
+        track.addEventListener('touchend', function(e) {
+            let endX = e.changedTouches[0].clientX;
+            let diff = startX - endX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0 && currentPanel === 0) slideTo(1);  // свайп влево
+                else if (diff < 0 && currentPanel === 1) slideTo(0); // свайп вправо
+            }
+        });
+    })();
+</script>
 {% endblock %}
