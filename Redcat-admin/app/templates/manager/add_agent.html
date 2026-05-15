@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Новый контрагент{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Новый контрагент</h1>
+    <a href="{{ url_for('manager.index') }}" class="btn btn-light btn-sm">Назад</a>
+</div>
+<form method="POST" action="{{ url_for('manager.submit_agent') }}">
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Название компании / Юридическое название <span class="help-icon" data-bs-toggle="tooltip" title="Официальное наименование агентства или ИП">?</span></label>
+                <input type="text" class="form-control" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">ФИО Директора организации <span class="help-icon" data-bs-toggle="tooltip" title="Полные фамилия, имя, отчество руководителя">?</span></label>
+                <input type="text" class="form-control" name="director_name">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Телефон директора <span class="help-icon" data-bs-toggle="tooltip" title="Мобильный или рабочий номер директора">?</span></label>
+                <input type="tel" class="form-control phone-mask" name="director_phone">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">ФИО Контактного лица <span class="help-icon" data-bs-toggle="tooltip" title="Сотрудник для оперативной связи">?</span></label>
+                <input type="text" class="form-control" name="contact_name">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Телефон контактного лица <span class="help-icon" data-bs-toggle="tooltip" title="Основной номер для связи в мессенджерах">?</span></label>
+                <input type="tel" class="form-control phone-mask" name="contact_phone">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Мессенджер привязан к номеру телефона?</label>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="messenger_linked" id="linkedYes" value="yes" checked onchange="toggleMessengerField()">
+                    <label class="form-check-label" for="linkedYes">Да</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="messenger_linked" id="linkedNo" value="no" onchange="toggleMessengerField()">
+                    <label class="form-check-label" for="linkedNo">Нет</label>
+                </div>
+            </div>
+            <div class="mb-3" id="messengerContactGroup" style="display:none;">
+                <label class="form-label">Ссылка или номер для мессенджера <span class="help-icon" data-bs-toggle="tooltip" title="Например, Telegram @username или WhatsApp +7...">?</span></label>
+                <input type="text" class="form-control" name="messenger_contact">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Ссылка на сайт <span class="help-icon" data-bs-toggle="tooltip" title="Адрес официального сайта агентства (если есть)">?</span></label>
+                <input type="url" class="form-control" name="website">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Количество активных агентов <span class="help-icon" data-bs-toggle="tooltip" title="Общее число агентов, работающих в компании">?</span></label>
+                <input type="number" class="form-control" name="active_agents_count" min="0" value="0">
+            </div>
+        </div>
+    </div>
+    <div class="d-flex justify-content-between">
+        <a href="{{ url_for('manager.index') }}" class="btn btn-outline-secondary">Отмена</a>
+        <button type="submit" class="btn btn-success btn-lg">Создать</button>
+    </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8-beta.17/jquery.inputmask.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.phone-mask').inputmask("+7 (999) 999-99-99");
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+    function toggleMessengerField() {
+        var noRadio = document.getElementById('linkedNo');
+        var group = document.getElementById('messengerContactGroup');
+        group.style.display = noRadio.checked ? 'block' : 'none';
+    }
+    // Инициализация при загрузке
+    toggleMessengerField();
+</script>
+{% endblock %}
