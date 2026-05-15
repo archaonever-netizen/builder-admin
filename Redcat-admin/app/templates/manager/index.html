@@ -2,35 +2,26 @@
 {% block title %}Менеджер – Контрагенты{% endblock %}
 {% block content %}
 <style>
-    /* Внешний контейнер – ограничивает ширину, занимает всю высоту экрана,
-       чтобы стрелки позиционировались вертикально по центру viewport'а */
     .slider-wrapper {
         position: relative;
         max-width: 1200px;
         margin: 0 auto;
-        padding: 0 60px;      /* место под стрелки */
-        min-height: 100vh;    /* обеспечивает центрирование стрелок */
+        padding: 0 60px;
+        min-height: 100vh;
     }
-
-    /* Область слайдера – скрывает соседние панели */
     .slider-viewport {
         overflow: hidden;
     }
-
     #sliderTrack {
         display: flex;
         transition: transform 0.4s ease;
         width: 200%;
     }
-
     .slider-panel {
         width: 50%;
         flex-shrink: 0;
         padding: 1rem 0;
     }
-
-    /* Стрелки – абсолютное позиционирование внутри wrapper,
-       вертикально по центру контейнера (100vh) */
     .slider-btn {
         position: absolute;
         top: 50%;
@@ -48,31 +39,24 @@
         outline: none !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
-
-    .slider-btn:focus,
-    .slider-btn:active {
+    .slider-btn:focus, .slider-btn:active {
         outline: none;
         box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
-
     .btn-slider-left {
         left: 10px;
         background-color: #6c757d;
         color: white;
     }
-
     .btn-slider-right {
         right: 10px;
         background-color: #1a1f36;
         color: white;
     }
-
     .slider-btn:disabled {
         opacity: 0.3;
         pointer-events: none;
     }
-
-    /* Убираем эффекты Bootstrap при клике */
     .slider-btn.btn-primary:not(:disabled):not(.disabled):active,
     .slider-btn.btn-primary:not(:disabled):not(.disabled).active,
     .slider-btn.btn-outline-secondary:not(:disabled):not(.disabled):active,
@@ -82,12 +66,6 @@
         color: inherit !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
     }
-    .slider-btn.btn-primary:not(:disabled):not(.disabled):focus,
-    .slider-btn.btn-outline-secondary:not(:disabled):not(.disabled):focus {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
-    }
-
-    /* Мобильные: стрелки скрываем, убираем отступы */
     @media (max-width: 767.98px) {
         .slider-wrapper {
             padding: 0;
@@ -100,7 +78,6 @@
 </style>
 
 <div class="slider-wrapper">
-    <!-- Стрелки теперь внутри wrapper, который растянут на высоту экрана -->
     <button id="slideLeftBtn" class="slider-btn btn-slider-left" disabled aria-label="Предыдущий экран">←</button>
     <button id="slideRightBtn" class="slider-btn btn-slider-right" aria-label="Следующий экран">→</button>
 
@@ -118,10 +95,11 @@
                     <div class="col-md-4 mb-3">
                         <div class="card h-100">
                             <div class="card-body">
-                                <h5 class="card-title">{{ agent.name }}</h5>
+                                <a href="{{ url_for('manager.agent_card', agent_id=agent.id) }}" class="text-decoration-none text-dark">
+                                    <h5 class="card-title">{{ agent.name }}</h5>
+                                </a>
                                 <p class="card-text">Создан: {{ agent.created_at.strftime('%d.%m.%Y') }}</p>
                                 <div class="btn-group">
-                                    <a href="{{ url_for('manager.agent_card', agent_id=agent.id) }}" class="btn btn-outline-secondary btn-sm">Карточка</a>
                                     <a href="{{ url_for('manager.edit_agent', agent_id=agent.id) }}" class="btn btn-outline-warning btn-sm">✎</a>
                                     <form action="{{ url_for('manager.delete_agent', agent_id=agent.id) }}" method="POST" onsubmit="return confirm('Удалить {{ agent.name }}?')">
                                         <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
@@ -183,7 +161,6 @@
             if (currentPanel < 1) slideTo(currentPanel + 1);
         });
 
-        // Свайп на мобильных
         let startX = 0;
         track.addEventListener('touchstart', (e) => {
             startX = e.touches[0].clientX;
