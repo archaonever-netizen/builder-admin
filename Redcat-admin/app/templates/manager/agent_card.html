@@ -4,12 +4,13 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>{{ agent.name }}</h1>
     <div>
-        <a href="{{ url_for('manager.edit_agent', agent_id=agent.id) }}" class="btn btn-outline-warning btn-sm">✎ Редактировать</a>
-        <form action="{{ url_for('manager.delete_agent', agent_id=agent.id) }}" method="POST" style="display:inline" onsubmit="return confirm('Удалить {{ agent.name }}?')">
-            <button type="submit" class="btn btn-outline-danger btn-sm">🗑 Удалить</button>
-        </form>
-        <a href="{{ url_for('manager.index') }}" class="btn btn-outline-secondary">← К списку</a>
-    </div>
+        <div>
+    <a href="{{ url_for('manager.edit_agent', agent_id=agent.id) }}" class="btn btn-outline-warning btn-sm d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 31px;" title="Редактировать">✎</a>
+    <form action="{{ url_for('manager.delete_agent', agent_id=agent.id) }}" method="POST" style="display:inline" onsubmit="return confirm('Удалить {{ agent.name }}?')">
+        <button type="submit" class="btn btn-outline-danger btn-sm d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 31px;" title="Удалить">🗑</button>
+    </form>
+    <a href="{{ url_for('manager.index') }}" class="btn btn-outline-secondary btn-sm">← К списку</a>
+</div>
 </div>
 
 <!-- Основная информация -->
