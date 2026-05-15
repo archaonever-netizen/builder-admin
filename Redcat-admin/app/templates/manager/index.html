@@ -2,15 +2,17 @@
 {% block title %}Менеджер – Контрагенты{% endblock %}
 {% block content %}
 <style>
-    /* Внешний контейнер – ограничивает ширину и создаёт отступы для стрелок */
+    /* Внешний контейнер – ограничивает ширину, занимает всю высоту экрана,
+       чтобы стрелки позиционировались вертикально по центру viewport'а */
     .slider-wrapper {
         position: relative;
         max-width: 1200px;
         margin: 0 auto;
-        padding: 0 60px;   /* место под стрелки */
+        padding: 0 60px;      /* место под стрелки */
+        min-height: 100vh;    /* обеспечивает центрирование стрелок */
     }
 
-    /* Область слайдера – без отступов, overflow скрывает соседние панели */
+    /* Область слайдера – скрывает соседние панели */
     .slider-viewport {
         overflow: hidden;
     }
@@ -27,7 +29,8 @@
         padding: 1rem 0;
     }
 
-    /* Стрелки – абсолютное позиционирование внутри wrapper, привязаны к контенту */
+    /* Стрелки – абсолютное позиционирование внутри wrapper,
+       вертикально по центру контейнера (100vh) */
     .slider-btn {
         position: absolute;
         top: 50%;
@@ -88,6 +91,7 @@
     @media (max-width: 767.98px) {
         .slider-wrapper {
             padding: 0;
+            min-height: auto;
         }
         .slider-btn {
             display: none;
@@ -96,7 +100,7 @@
 </style>
 
 <div class="slider-wrapper">
-    <!-- Стрелки теперь внутри wrapper, не выходят за границы контента -->
+    <!-- Стрелки теперь внутри wrapper, который растянут на высоту экрана -->
     <button id="slideLeftBtn" class="slider-btn btn-slider-left" disabled aria-label="Предыдущий экран">←</button>
     <button id="slideRightBtn" class="slider-btn btn-slider-right" aria-label="Следующий экран">→</button>
 
