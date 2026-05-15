@@ -21,7 +21,10 @@
             transition: transform 0.2s ease;
             text-align: center;
             padding: 2rem;
-            cursor: pointer;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .role-card:hover {
             transform: translateY(-5px);
@@ -39,10 +42,20 @@
             color: white;
             text-decoration: none;
             display: inline-block;
+            margin-top: auto;
         }
         .btn-role:hover {
             background-color: #2d325a;
             color: white;
+        }
+        /* Обеспечиваем одинаковую высоту колонок */
+        .row-equal-height {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .row-equal-height > [class*='col-'] {
+            display: flex;
+            flex-direction: column;
         }
     </style>
 </head>
@@ -52,7 +65,7 @@
             <h1 class="display-4 fw-bold" style="color: #1a1f36;">RedCat CRM</h1>
             <p class="lead text-muted">Выберите вашу роль для входа в систему</p>
         </div>
-        <div class="row justify-content-center g-4">
+        <div class="row justify-content-center g-4 row-equal-height">
             <!-- Карточка Администратора -->
             <div class="col-md-4 col-sm-6">
                 <div class="role-card">
@@ -62,7 +75,7 @@
                     <a href="/admin/" class="btn-role">Войти</a>
                 </div>
             </div>
-            <!-- Карточка Менеджера (НОВАЯ) -->
+            <!-- Карточка Менеджера -->
             <div class="col-md-4 col-sm-6">
                 <div class="role-card">
                     <div class="role-icon">💼</div>
