@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Редактирование контрагента{% endblock %}
+{% block content %}
+<h1>Редактирование: {{ agent.name }}</h1>
+<form method="POST">
+    <div class="mb-3">
+        <label class="form-label">Название компании / Юридическое название</label>
+        <input type="text" class="form-control" name="name" value="{{ agent.name }}" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">ФИО Директора</label>
+        <input type="text" class="form-control" name="director_name" value="{{ agent.director_name or '' }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Телефон директора</label>
+        <input type="tel" class="form-control phone-mask" name="director_phone" value="{{ agent.director_phone or '' }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">ФИО Контактного лица</label>
+        <input type="text" class="form-control" name="contact_name" value="{{ agent.contact_name or '' }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Телефон контактного лица</label>
+        <input type="tel" class="form-control phone-mask" name="contact_phone" value="{{ agent.contact_phone or '' }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Мессенджер привязан к номеру?</label>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="messenger_linked" value="yes" {% if agent.messenger_linked %}checked{% endif %}>
+            <label class="form-check-label">Да</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="messenger_linked" value="no" {% if not agent.messenger_linked %}checked{% endif %}>
+            <label class="form-check-label">Нет</label>
+        </div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Ссылка или номер для мессенджера (если не привязан)</label>
+        <input type="text" class="form-control" name="messenger_contact" value="{{ agent.messenger_contact or '' }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Ссылка на сайт</label>
+        <input type="url" class="form-control" name="website" value="{{ agent.website or '' }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Количество активных агентов</label>
+        <input type="number" class="form-control" name="active_agents_count" value="{{ agent.active_agents_count }}">
+    </div>
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a href="{{ url_for('manager.agent_card', agent_id=agent.id) }}" class="btn btn-outline-secondary">Отмена</a>
+</form>
+{% endblock %}
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8-beta.17/jquery.inputmask.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.phone-mask').inputmask("+7 (999) 999-99-99");
+    });
+</script>
+{% endblock %}
