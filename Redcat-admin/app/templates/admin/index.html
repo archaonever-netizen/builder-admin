@@ -33,18 +33,18 @@
       </div>
     </div>
     <div class="contractor-actions">
-      <a href="{{ url_for('admin.client_card', id=dev.id) }}" class="btn btn-icon" title="Открыть">
+      <a href="{{ url_for('admin.client_card', dev_id=dev.id) }}" class="btn btn-icon" title="Открыть">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
           <circle cx="12" cy="12" r="3"/>
         </svg>
       </a>
-      <a href="{{ url_for('admin.edit_developer', id=dev.id) }}" class="btn btn-icon" title="Редактировать">
+      <a href="{{ url_for('admin.edit_developer', dev_id=dev.id) }}" class="btn btn-icon" title="Редактировать">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
         </svg>
       </a>
-      <form action="{{ url_for('admin.delete_developer', id=dev.id) }}" method="post" onsubmit="return confirm('Удалить застройщика?');" style="display:inline">
+      <form action="{{ url_for('admin.delete_developer', dev_id=dev.id) }}" method="post" onsubmit="return confirm('Удалить застройщика?');" style="display:inline">
         <button type="submit" class="btn btn-icon" title="Удалить">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 6h18"/>
