@@ -36,8 +36,8 @@
         <!-- Аккордеон «Сотрудники» -->
         <div id="headingEmployees">
             <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseEmployees" aria-expanded="false" aria-controls="collapseEmployees">
-                <div class="flex-fill p-3 text-center" style="font-size: 1rem; font-weight: 500;">
-                    Сотрудники: {{ agent.employees|length }}
+                <div class="flex-fill p-3" style="font-size: 1rem; font-weight: 500; text-align: justify; text-align-last: justify;">
+                    Сотрудники: {{ agent.employees|length }} &nbsp;|&nbsp; Фиксации: {{ total_fixations }} &nbsp;|&nbsp; Брони: {{ total_bookings }} &nbsp;|&nbsp; Сделки: {{ total_deals }}
                 </div>
                 <div class="p-3 d-flex align-items-center border-start">
                     <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapseEmployees">↕</button>
@@ -93,8 +93,8 @@
         <!-- Аккордеон «Презентации» -->
         <div id="headingPresentations">
             <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapsePresentations" aria-expanded="false" aria-controls="collapsePresentations">
-                <div class="flex-fill p-3 text-center" style="font-size: 1rem; font-weight: 500;">
-                    Презентации: {{ current_month_count }} (в этом месяце) | {{ all_time_count }} (за весь период)
+                <div class="flex-fill p-3" style="font-size: 1rem; font-weight: 500; text-align: justify; text-align-last: justify;">
+                    Презентации: {{ current_month_count }} &nbsp;(в этом месяце)&nbsp; | &nbsp;{{ all_time_count }} &nbsp;(за весь период)
                 </div>
                 <div class="p-3 d-flex align-items-center border-start">
                     <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapsePresentations">↕</button>
@@ -114,8 +114,8 @@
         <!-- Аккордеон «Клиенты в работе» -->
         <div id="headingClients">
             <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseClients" aria-expanded="false" aria-controls="collapseClients">
-                <div class="flex-fill p-3 text-center" style="font-size: 1rem; font-weight: 500;">
-                    Клиенты в работе: {{ clients_current | default(0) }} (текущих) | Успешно: {{ clients_success | default(0) }} | Провалены: {{ clients_failed | default(0) }}
+                <div class="flex-fill p-3" style="font-size: 1rem; font-weight: 500; text-align: justify; text-align-last: justify;">
+                    Клиенты в работе: {{ clients_current | default(0) }} &nbsp;(текущих)&nbsp; | &nbsp;Успешно: {{ clients_success | default(0) }} &nbsp;|&nbsp; Провалены: {{ clients_failed | default(0) }}
                 </div>
                 <div class="p-3 d-flex align-items-center border-start">
                     <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapseClients">↕</button>
