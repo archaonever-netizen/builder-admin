@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Менеджер – Контрагенты{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Контрагенты (агентства)</h1>
+    <div>
+        <a href="{{ url_for('manager.clients_placeholder') }}" class="btn btn-outline-secondary me-2">Клиенты в работе</a>
+        <a href="{{ url_for('manager.add_agent_form') }}" class="btn btn-primary btn-lg">+ Новый контрагент</a>
+    </div>
+</div>
+{% if agents %}
+<div class="row">
+    {% for agent in agents %}
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">{{ agent.name }}</h5>
+                <p class="card-text">Создан: {{ agent.created_at.strftime('%d.%m.%Y') }}</p>
+                <div class="btn-group">
+                    <a href="{{ url_for('manager.agent_card', agent_id=agent.id) }}" class="btn btn-outline-secondary btn-sm">Карточка</a>
+                    <a href="{{ url_for('manager.edit_agent', agent_id=agent.id) }}" class="btn btn-outline-warning btn-sm">✎</a>
+                    <form action="{{ url_for('manager.delete_agent', agent_id=agent.id) }}" method="POST" onsubmit="return confirm('Удалить {{ agent.name }}?')">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p>Нет ни одного контрагента. Нажмите «+ Новый контрагент» чтобы добавить.</p>
+{% endif %}
+{% endblock %}
