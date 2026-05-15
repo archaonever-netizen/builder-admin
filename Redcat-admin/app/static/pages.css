@@ -1,0 +1,102 @@
+/* ------------------ LOGIN PAGE ------------------ */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f7faff 0%, #edf3ff 100%);
+  padding: 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 520px;
+  background: white;
+  border-radius: var(--radius-32);
+  padding: 56px;
+  box-shadow: var(--shadow-large);
+  text-align: center;
+}
+
+.login-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.login-card h1 {
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  margin-bottom: 12px;
+}
+
+.login-subtitle {
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin-bottom: 40px;
+}
+
+.role-card {
+  background: #fbfdff;
+  border: 1px solid #e8edf5;
+  border-radius: var(--radius-24);
+  padding: 32px;
+  text-align: left;
+}
+
+.role-icon {
+  width: 48px;
+  height: 48px;
+  background: #eef2ff;
+  border-radius: var(--radius-14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: var(--primary);
+}
+
+.role-card h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.role-card p {
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+/* ------------------ DASHBOARD (список застройщиков) ------------------ */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.dashboard-title h1 {
+  margin-bottom: 8px;
+}
+
+.dashboard-title p {
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+/* ------------------ CLIENT PAGE (карточка застройщика) ------------------ */
+.client-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.client-header .back-btn {
+  margin-right: 16px;
+}
+
+.client-header h1 {
+  margin: 0;
+}
