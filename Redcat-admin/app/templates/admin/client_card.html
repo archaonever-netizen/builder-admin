@@ -1,642 +1,581 @@
 {% extends "base.html" %}
 {% block title %}Карточка застройщика{% endblock %}
 {% block content %}
-
-<div class="client-header">
-  <div style="display:flex; align-items:center; gap:16px;">
-    <a href="{{ url_for('admin.index') }}" class="btn btn-icon back-btn" title="Назад">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m15 18-6-6 6-6"/>
-      </svg>
-    </a>
+<div class="d-flex justify-content-between align-items-center mb-4">
     <h1>{{ developer.name }}</h1>
-  </div>
-  <div style="display:flex; gap:8px;">
-    <a href="{{ url_for('admin.edit_developer', dev_id=developer.id) }}" class="btn btn-primary">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;">
-        <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-      </svg>
-      Редактировать
-    </a>
-    <form action="{{ url_for('admin.delete_developer', dev_id=developer.id) }}" method="POST" style="display:inline" onsubmit="return confirm('Вы уверены, что хотите удалить {{ developer.name }}?')">
-      <button type="submit" class="btn btn-danger">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;">
-          <path d="M3 6h18"/>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
-          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-        </svg>
-        Удалить
-      </button>
-    </form>
-  </div>
+    <div>
+        <a href="{{ url_for('admin.edit_developer', dev_id=developer.id) }}" class="btn btn-outline-warning btn-sm">✎ Редактировать</a>
+        <form action="{{ url_for('admin.delete_developer', dev_id=developer.id) }}" method="POST" style="display:inline" onsubmit="return confirm('Вы уверены, что хотите удалить {{ developer.name }}?')">
+            <button type="submit" class="btn btn-outline-danger btn-sm">🗑 Удалить</button>
+        </form>
+        <a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary">← К списку</a>
+    </div>
 </div>
 
 <!-- Основная информация -->
-<section class="info-card">
-  <h2 style="margin-bottom:24px; font-weight:600;">Основная информация</h2>
-  <dl class="info-grid">
-    <dt>Объектов</dt>
-    <dd>{{ developer.complexes|length }}</dd>
-    <dt>Кураторы</dt>
-    <dd>
-      {% set curator_contacts = developer.contacts|selectattr('contact_type', 'equalto', 'curator')|list %}
-      {% if curator_contacts %}
-        {% for c in curator_contacts %}
-          {{ c.name }} {{ c.phone }} ({{ developer.complexes|map(attribute='name')|join(', ') }}){% if not loop.last %}; {% endif %}
-        {% endfor %}
-      {% else %}
-        —
-      {% endif %}
-    </dd>
-    <dt>Шахматка</dt>
-    <dd>
-      {% if developer.chessboard_link %}
-        <a href="{{ developer.chessboard_link }}" target="_blank" style="color:var(--primary); text-decoration:underline;">{{ developer.chessboard_link }}</a>
-        {% if developer.chessboard_updated %} <small style="color:var(--text-secondary);">(обновлено: {{ developer.chessboard_updated.strftime('%d.%m.%Y %H:%M') }})</small>{% endif %}
-      {% else %}—{% endif %}
-    </dd>
-    <dt>Фид</dt>
-    <dd>
-      {% if developer.feed %}
-        <span id="feed-text">{{ developer.feed }}</span>
-        <button class="btn btn-icon" onclick="copyToClipboard('feed-text')" title="Копировать" style="vertical-align:middle;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        </button>
-        {% if developer.feed_updated %} <small style="color:var(--text-secondary);">(обновлено: {{ developer.feed_updated.strftime('%d.%m.%Y %H:%M') }})</small>{% endif %}
-      {% else %}—{% endif %}
-    </dd>
-  </dl>
-</section>
-
-<!-- Единая карточка с аккордеонами -->
-<div class="info-card" style="padding:0; overflow:hidden;">
-
-  <!-- Жилые комплексы -->
-  <div class="accordion-item">
-    <div class="accordion-header" onclick="toggleAccordion('collapseComplexes')">
-      <div class="flex-fill p-3">
-        <div class="soft-table" style="gap:0;">
-          <div class="table-header" style="background:transparent; font-weight:600;">
-            <span>ЖК: {{ developer.complexes|length }}</span>
-            <span>Комиссия: {{ developer.complexes|map(attribute='commission')|reject('none')|list|min if developer.complexes|map(attribute='commission')|reject('none')|list else '—' }}{% if developer.complexes|map(attribute='commission')|reject('none')|list|length > 1 %}-{{ developer.complexes|map(attribute='commission')|reject('none')|list|max }}{% endif %}%</span>
-            <span>Город: {{ developer.complexes|map(attribute='city')|reject('none')|unique|join(', ') or '—' }}</span>
-            <span>Регион: {{ developer.complexes|map(attribute='region')|reject('none')|unique|join(', ') or '—' }}</span>
-            <span>Тип: {{ developer.complexes|map(attribute='property_type')|reject('none')|unique|join(', ') or '—' }}</span>
-            <span>Куратор: {{ developer.complexes|map(attribute='contact_person')|reject('none')|unique|join(', ') or '—' }}</span>
-          </div>
-        </div>
-      </div>
-      <div class="accordion-toggle">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-    </div>
-    <div id="collapseComplexes" class="accordion-body" style="display:none;">
-      <div class="p-3">
-        {% if developer.complexes %}
-        <div class="soft-table">
-          {% for rc in developer.complexes %}
-          <div class="table-row">
-            <span>{{ rc.name }}</span>
-            <span>{{ rc.commission }}%</span>
-            <span>{{ rc.city or '—' }}</span>
-            <span>{{ rc.region or '—' }}</span>
-            <span>{{ rc.property_type or '—' }}</span>
-            <span>{{ rc.contact_person or '—' }}</span>
-            <span>
-              <button class="btn btn-icon" onclick="openModal('editComplexModal{{ rc.id }}')" title="Редактировать">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-              </button>
-              <form action="{{ url_for('admin.delete_complex', complex_id=rc.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить ЖК {{ rc.name }}?')" style="display:inline;">
-                <button type="submit" class="btn btn-icon" title="Удалить">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
-              </form>
-            </span>
-          </div>
-          {% endfor %}
-        </div>
-        {% else %}
-        <p style="color:var(--text-secondary);">Нет жилых комплексов.</p>
-        {% endif %}
-        <div class="text-end mt-2">
-          <button class="btn btn-success" onclick="openModal('addComplexModal')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="margin-right:6px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Добавить ЖК
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Контакты -->
-  <div class="accordion-item" style="border-top:1px solid var(--border);">
-    <div class="accordion-header" onclick="toggleAccordion('collapseContacts')">
-      <div class="flex-fill p-3">
-        <div class="soft-table" style="gap:0;">
-          <div class="table-header" style="background:transparent; font-weight:600;">
-            <span>Контакты: {{ developer.contacts|length }}</span>
-            <span>Ответственные: {{ developer.contacts|map(attribute='contact_type')|unique|list|map('replace', 'curator', 'Куратор')|map('replace', 'rop', 'РОП')|map('replace', 'partner_head', 'Рук. парт. отдела')|map('replace', 'doc_flow', 'Документооборот')|join(', ') or '—' }}</span>
-          </div>
-        </div>
-      </div>
-      <div class="accordion-toggle">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-    </div>
-    <div id="collapseContacts" class="accordion-body" style="display:none;">
-      <div class="p-3">
-        {% if developer.contacts %}
-        <div class="soft-table">
-          {% for c in developer.contacts %}
-          <div class="table-row">
-            <span>{{ contact_types_ru.get(c.contact_type, c.contact_type) }}</span>
-            <span>{{ c.name }}</span>
-            <span>{{ c.phone or '—' }}</span>
-            <span>{{ c.email or '—' }}</span>
-            <span>
-              <button class="btn btn-icon" onclick="openModal('editContactModal{{ c.id }}')" title="Редактировать">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-              </button>
-              <form action="{{ url_for('admin.delete_contact', contact_id=c.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить контакт {{ c.name }}?')" style="display:inline;">
-                <button type="submit" class="btn btn-icon" title="Удалить">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
-              </form>
-            </span>
-          </div>
-          {% endfor %}
-        </div>
-        {% else %}
-        <p style="color:var(--text-secondary);">Нет контактов.</p>
-        {% endif %}
-        <div class="text-end mt-2">
-          <button class="btn btn-success" onclick="openModal('addContactModal')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="margin-right:6px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Добавить контакт
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Документы -->
-  <div class="accordion-item" style="border-top:1px solid var(--border);">
-    <div class="accordion-header" onclick="toggleAccordion('collapseDocuments')">
-      <div class="flex-fill p-3">
-        <div class="soft-table" style="gap:0;">
-          <div class="table-header" style="background:transparent; font-weight:600;">
-            <span>Документы: {{ developer.documents|length }}</span>
-          </div>
-        </div>
-      </div>
-      <div class="accordion-toggle">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-    </div>
-    <div id="collapseDocuments" class="accordion-body" style="display:none;">
-      <div class="p-3">
-        <div id="upload-form-card" style="display:none; margin-bottom:1rem;">
-          <form action="{{ url_for('admin.upload_for_developer', dev_id=developer.id) }}" method="POST" enctype="multipart/form-data">
-            <input type="file" name="files" class="input mb-2" multiple required>
-            <div class="d-flex justify-content-end gap-2">
-              <button type="button" class="btn btn-icon" onclick="document.getElementById('upload-form-card').style.display='none'">Отмена</button>
-              <button type="submit" class="btn btn-primary">Загрузить</button>
-            </div>
-          </form>
-        </div>
-        {% if developer.documents %}
-        <div class="soft-table">
-          {% for doc in developer.documents %}
-          <div class="table-row">
-            <span>{{ doc.original_filename or doc.filename }}</span>
-            <span>
-              <a href="{{ doc.filepath }}" class="btn btn-icon" target="_blank" title="Скачать">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              </a>
-              <form action="{{ url_for('admin.delete_document', dev_id=developer.id, doc_id=doc.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить файл {{ doc.original_filename or doc.filename }}?')" style="display:inline;">
-                <button type="submit" class="btn btn-icon" title="Удалить">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
-              </form>
-            </span>
-          </div>
-          {% endfor %}
-        </div>
-        {% else %}
-        <p style="color:var(--text-secondary);">Нет прикреплённых документов.</p>
-        {% endif %}
-        <div class="text-end mt-2">
-          <button class="btn btn-success" onclick="document.getElementById('upload-form-card').style.display='block'">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="margin-right:6px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Добавить файл
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Регламент фиксации и бронирования -->
-  <div class="accordion-item" style="border-top:1px solid var(--border);">
-    <div class="accordion-header" onclick="toggleAccordion('collapseRegulation')">
-      <div class="flex-fill p-3">
-        <span>
-          Регламент фиксации и бронирования
-          <span id="regulation-status-badge">
-            {% if regulation and regulation.status == 'Выполнено' %}
-              <span class="status-badge status-certain">Выполнено</span>
-            {% elif regulation and regulation.data is mapping and regulation.data|length > 0 %}
-              <span class="status-badge" style="background:#f3f4f6; color:#6b7280;">Заполнено вручную</span>
+<div class="card mb-3">
+    <div class="card-header">Основная информация</div>
+    <div class="card-body">
+        <p><strong>Объектов:</strong> {{ developer.complexes|length }}</p>
+        <p><strong>Кураторы:</strong>
+            {% set curator_contacts = developer.contacts|selectattr('contact_type', 'equalto', 'curator')|list %}
+            {% if curator_contacts %}
+                {% for c in curator_contacts %}
+                    {{ c.name }} {{ c.phone }} ({{ developer.complexes|map(attribute='name')|join(', ') }}){% if not loop.last %}; {% endif %}
+                {% endfor %}
             {% else %}
-              <span class="status-badge" style="background:#f3f4f6; color:#6b7280;">Не заполнен</span>
+                —
             {% endif %}
-          </span>
-        </span>
-      </div>
-      <div class="accordion-toggle">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
+        </p>
+        <p><strong>Шахматка:</strong>
+            {% if developer.chessboard_link %}
+                <a href="{{ developer.chessboard_link }}" target="_blank">{{ developer.chessboard_link }}</a>
+                {% if developer.chessboard_updated %} <small class="text-muted">(обновлено: {{ developer.chessboard_updated.strftime('%d.%m.%Y %H:%M') }})</small>{% endif %}
+            {% else %}—{% endif %}
+        </p>
+        <p><strong>Фид:</strong>
+            {% if developer.feed %}
+                <span id="feed-text">{{ developer.feed }}</span>
+                <button class="btn btn-outline-secondary btn-sm ms-2" onclick="copyToClipboard('feed-text')">📋 Копировать</button>
+                {% if developer.feed_updated %} <small class="text-muted">(обновлено: {{ developer.feed_updated.strftime('%d.%m.%Y %H:%M') }})</small>{% endif %}
+            {% else %}—{% endif %}
+        </p>
     </div>
-    <div id="collapseRegulation" class="accordion-body" style="display:none; width:100%; box-sizing:border-box; max-height:none; overflow:visible;">
-      <div class="p-3">
-        {% if not regulation or not regulation.data or (regulation.data is mapping and regulation.data|length == 0) or request.args.get('edit') %}
-          <form id="regulation-manual-form" method="POST" action="{{ url_for('admin.save_regulation', dev_id=developer.id) }}">
-            <h5>Внутренний регламент</h5>
-            {% set internal_fields = [
-                ('company', 'Название компании'),
-                ('fixation_address', 'Адрес/канал фиксации'),
-                ('fixation_period', 'Срок фиксации'),
-                ('commerce_fixation', 'Фиксация коммерции'),
-                ('foreign_numbers_fixation', 'Фиксация иностранных номеров'),
-                ('cross_fixation', 'Сквозная ли фиксация'),
-                ('fixation_start', 'С какого момента фиксируется'),
-                ('uniqueness_extension', 'Как продлить уникальность'),
-                ('viewing_appointment', 'Как записывать на просмотр'),
-                ('escort_required', 'Нужно ли сопровождение'),
-                ('inspection_report_required', 'Нужен ли акт просмотра'),
-                ('developer_emails', 'Проверить актуальные почты'),
-                ('response_time', 'Примерный срок ответов'),
-                ('notes', 'Примечание')
-            ] %}
-            {% for key, label in internal_fields %}
-            <div class="mb-3">
-              <label class="form-label" style="font-weight:500;">{{ label }}</label>
-              <input type="text" class="input regulation-field" name="internal_regulation.{{ key }}" value="{{ regulation.data.internal_regulation[key] if regulation and regulation.data and regulation.data.internal_regulation else '' }}">
-            </div>
-            {% endfor %}
+</div>
 
-            <h5>Регламент бронирования</h5>
-            {% set booking_fields = [
-                ('how_to_update_tariffs', 'Как обновлять тарифы'),
-                ('how_to_update_remains', 'Как обновлять остатки')
-            ] %}
-            {% for key, label in booking_fields %}
-            <div class="mb-3">
-              <label class="form-label" style="font-weight:500;">{{ label }}</label>
-              <input type="text" class="input regulation-field" name="booking_regulation.{{ key }}" value="{{ regulation.data.booking_regulation[key] if regulation and regulation.data and regulation.data.booking_regulation else '' }}">
+<!-- Единая карточка со всеми аккордеонами -->
+<div class="card mb-3">
+    <div class="card-body p-0">
+        <!-- Жилые комплексы -->
+        <div class="p-0" id="headingComplexes">
+            <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseComplexes" aria-expanded="false" aria-controls="collapseComplexes" style="cursor: pointer;">
+                <div class="flex-fill p-3">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless align-middle text-center mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ЖК: {{ developer.complexes|length }}</th>
+                                    <th>Комиссия: {{ developer.complexes|map(attribute='commission')|reject('none')|list|min if developer.complexes|map(attribute='commission')|reject('none')|list else '—' }}{% if developer.complexes|map(attribute='commission')|reject('none')|list|length > 1 %}-{{ developer.complexes|map(attribute='commission')|reject('none')|list|max }}{% endif %}%</th>
+                                    <th>Город: {{ developer.complexes|map(attribute='city')|reject('none')|unique|join(', ') or '—' }}</th>
+                                    <th>Регион: {{ developer.complexes|map(attribute='region')|reject('none')|unique|join(', ') or '—' }}</th>
+                                    <th>Тип: {{ developer.complexes|map(attribute='property_type')|reject('none')|unique|join(', ') or '—' }}</th>
+                                    <th>Куратор: {{ developer.complexes|map(attribute='contact_person')|reject('none')|unique|join(', ') or '—' }}</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+                <div class="p-3 d-flex align-items-center border-start">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapseComplexes">↕</button>
+                </div>
             </div>
-            {% endfor %}
+        </div>
+        <div id="collapseComplexes" class="collapse" aria-labelledby="headingComplexes">
+            <div class="p-3">
+                {% if developer.complexes %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-borderless align-middle text-center">
+                        <tbody>
+                            {% for rc in developer.complexes %}
+                            <tr>
+                                <td>{{ rc.name }}</td>
+                                <td>{{ rc.commission }}%</td>
+                                <td>{{ rc.city or '—' }}</td>
+                                <td>{{ rc.region or '—' }}</td>
+                                <td>{{ rc.property_type or '—' }}</td>
+                                <td>{{ rc.contact_person or '—' }}</td>
+                                <td>
+                                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editComplexModal{{ rc.id }}">✎</button>
+                                    <form action="{{ url_for('admin.delete_complex', complex_id=rc.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить ЖК {{ rc.name }}?')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p>Нет жилых комплексов.</p>
+                {% endif %}
+                <div class="text-end mt-2">
+                    <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#addComplexModal">+ Добавить ЖК</button>
+                </div>
+            </div>
+        </div>
+        <hr class="m-0">
 
-            <div class="d-flex justify-content-between">
-              <button type="submit" class="btn btn-primary">Сохранить</button>
-              <button type="button" id="start-auto-btn" class="btn btn-primary" style="background:#f0fdf4; color:#22c55e; border:1px solid #bbf7d0;">Заполнить автоматически</button>
+        <!-- Контакты -->
+        <div class="p-0" id="headingContacts">
+            <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseContacts" aria-expanded="false" aria-controls="collapseContacts" style="cursor: pointer;">
+                <div class="flex-fill p-3">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless align-middle text-center mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Контакты: {{ developer.contacts|length }}</th>
+                                    <th>Ответственные: {{ developer.contacts|map(attribute='contact_type')|unique|list|map('replace', 'curator', 'Куратор')|map('replace', 'rop', 'РОП')|map('replace', 'partner_head', 'Рук. парт. отдела')|map('replace', 'doc_flow', 'Документооборот')|join(', ') or '—' }}</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+                <div class="p-3 d-flex align-items-center border-start">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapseContacts">↕</button>
+                </div>
             </div>
-          </form>
-        {% else %}
-          <div id="regulation-static">
-            <h5>Внутренний регламент</h5>
-            {% for key, label in internal_fields %}
-            <div class="field-row" data-key="internal_regulation.{{ key }}" style="display:flex; align-items:center; margin-bottom:12px;">
-              <span style="width:220px; color:var(--text-secondary);">{{ label }}</span>
-              <span class="field-value" style="flex:1;">{{ regulation.data.internal_regulation[key] if regulation.data.internal_regulation[key] else '—' }}</span>
-              <button class="btn btn-icon edit-field-btn" title="Редактировать" style="margin-left:8px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-              </button>
-              <div class="edit-field-group" style="display:none; margin-left:8px; display:flex; gap:4px;">
-                <input type="text" class="input field-input" value="{{ regulation.data.internal_regulation[key] or '' }}" style="height:40px;">
-                <button class="btn btn-success save-field-btn" style="height:40px; padding:0 12px;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="20 6 9 17 4 12"/></svg>
-                </button>
-                <button class="btn btn-icon cancel-field-btn" style="height:40px; width:40px;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </div>
+        </div>
+        <div id="collapseContacts" class="collapse" aria-labelledby="headingContacts">
+            <div class="p-3">
+                {% if developer.contacts %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-borderless align-middle text-center">
+                        <tbody>
+                            {% for c in developer.contacts %}
+                            <tr>
+                                <td>{{ contact_types_ru.get(c.contact_type, c.contact_type) }}</td>
+                                <td>{{ c.name }}</td>
+                                <td>{{ c.phone or '—' }}</td>
+                                <td>{{ c.email or '—' }}</td>
+                                <td>
+                                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editContactModal{{ c.id }}">✎</button>
+                                    <form action="{{ url_for('admin.delete_contact', contact_id=c.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить контакт {{ c.name }}?')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p>Нет контактов.</p>
+                {% endif %}
+                <div class="text-end mt-2">
+                    <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#addContactModal">+ Добавить контакт</button>
+                </div>
             </div>
-            {% endfor %}
+        </div>
+        <hr class="m-0">
 
-            <h5>Регламент бронирования</h5>
-            {% for key, label in booking_fields %}
-            <div class="field-row" data-key="booking_regulation.{{ key }}" style="display:flex; align-items:center; margin-bottom:12px;">
-              <span style="width:220px; color:var(--text-secondary);">{{ label }}</span>
-              <span class="field-value" style="flex:1;">{{ regulation.data.booking_regulation[key] if regulation.data.booking_regulation[key] else '—' }}</span>
-              <button class="btn btn-icon edit-field-btn" title="Редактировать" style="margin-left:8px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-              </button>
-              <div class="edit-field-group" style="display:none; margin-left:8px; display:flex; gap:4px;">
-                <input type="text" class="input field-input" value="{{ regulation.data.booking_regulation[key] or '' }}" style="height:40px;">
-                <button class="btn btn-success save-field-btn" style="height:40px; padding:0 12px;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="20 6 9 17 4 12"/></svg>
-                </button>
-                <button class="btn btn-icon cancel-field-btn" style="height:40px; width:40px;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </div>
+        <!-- Документы -->
+        <div class="p-0" id="headingDocuments">
+            <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseDocuments" aria-expanded="false" aria-controls="collapseDocuments" style="cursor: pointer;">
+                <div class="flex-fill p-3">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless align-middle text-center mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Документы: {{ developer.documents|length }}</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+                <div class="p-3 d-flex align-items-center border-start">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapseDocuments">↕</button>
+                </div>
             </div>
-            {% endfor %}
+        </div>
+        <div id="collapseDocuments" class="collapse" aria-labelledby="headingDocuments">
+            <div class="p-3">
+                <div id="upload-form-card" style="display:none; margin-bottom:1rem;">
+                    <form action="{{ url_for('admin.upload_for_developer', dev_id=developer.id) }}" method="POST" enctype="multipart/form-data">
+                        <input type="file" name="files" class="form-control mb-2" multiple required>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('upload-form-card').style.display='none'">Отмена</button>
+                            <button type="submit" class="btn btn-primary btn-sm">Загрузить</button>
+                        </div>
+                    </form>
+                </div>
+                {% if developer.documents %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-borderless align-middle text-center">
+                        <tbody>
+                            {% for doc in developer.documents %}
+                            <tr>
+                                <td>{{ doc.original_filename or doc.filename }}</td>
+                                <td>
+                                    <a href="{{ doc.filepath }}" class="btn btn-outline-primary btn-sm" target="_blank">Скачать</a>
+                                    <form action="{{ url_for('admin.delete_document', dev_id=developer.id, doc_id=doc.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить файл {{ doc.original_filename or doc.filename }}?')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p>Нет прикреплённых документов.</p>
+                {% endif %}
+                <div class="text-end mt-2">
+                    <button class="btn btn-outline-success btn-sm" onclick="document.getElementById('upload-form-card').style.display='block'">+ Добавить файл</button>
+                </div>
+            </div>
+        </div>
+        <hr class="m-0">
 
-            {% if regulation.status != 'Выполнено' %}
-            <div class="text-end mt-2">
-              <a href="?edit=1" class="btn btn-icon" style="text-decoration:none;">Редактировать всё</a>
+        <!-- Регламент фиксации (аккордеон) -->
+        <div class="p-0" id="headingRegulation">
+            <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseRegulation" aria-expanded="false" aria-controls="collapseRegulation" style="cursor: pointer;">
+                <div class="flex-fill p-3">
+                    <span>
+                        Регламент фиксации и бронирования
+                        <span id="regulation-status-badge">
+                            {% if regulation and regulation.status == 'Выполнено' %}
+                                <span class="badge bg-success">Выполнено</span>
+                            {% elif regulation and regulation.data is mapping and regulation.data|length > 0 %}
+                                <span class="badge bg-secondary">Заполнено вручную</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Не заполнен</span>
+                            {% endif %}
+                        </span>
+                    </span>
+                </div>
+                <div class="p-3 d-flex align-items-center border-start">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapseRegulation">↕</button>
+                </div>
             </div>
-            {% endif %}
+        </div>
+        <div id="collapseRegulation" class="collapse" aria-labelledby="headingRegulation">
+            <div class="p-3">
+                {% if not regulation or not regulation.data or (regulation.data is mapping and regulation.data|length == 0) or request.args.get('edit') %}
+                    <!-- Форма редактирования (пустая или с данными при ?edit=1) -->
+                    <form id="regulation-manual-form" method="POST" action="{{ url_for('admin.save_regulation', dev_id=developer.id) }}">
+                        <h5>Внутренний регламент</h5>
+                        {% set internal_fields = [
+                            ('company', 'Название компании'),
+                            ('fixation_address', 'Адрес/канал фиксации'),
+                            ('fixation_period', 'Срок фиксации'),
+                            ('commerce_fixation', 'Фиксация коммерции'),
+                            ('foreign_numbers_fixation', 'Фиксация иностранных номеров'),
+                            ('cross_fixation', 'Сквозная ли фиксация'),
+                            ('fixation_start', 'С какого момента фиксируется'),
+                            ('uniqueness_extension', 'Как продлить уникальность'),
+                            ('viewing_appointment', 'Как записывать на просмотр'),
+                            ('escort_required', 'Нужно ли сопровождение'),
+                            ('inspection_report_required', 'Нужен ли акт просмотра'),
+                            ('developer_emails', 'Проверить актуальные почты'),
+                            ('response_time', 'Примерный срок ответов'),
+                            ('notes', 'Примечание')
+                        ] %}
+                        {% for key, label in internal_fields %}
+                        <div class="mb-3">
+                            <label class="form-label">{{ label }}</label>
+                            <input type="text" class="form-control regulation-field" name="internal_regulation.{{ key }}" value="{{ regulation.data.internal_regulation[key] if regulation and regulation.data and regulation.data.internal_regulation else '' }}">
+                        </div>
+                        {% endfor %}
+
+                        <h5>Регламент бронирования</h5>
+                        {% set booking_fields = [
+                            ('how_to_update_tariffs', 'Как обновлять тарифы'),
+                            ('how_to_update_remains', 'Как обновлять остатки')
+                        ] %}
+                        {% for key, label in booking_fields %}
+                        <div class="mb-3">
+                            <label class="form-label">{{ label }}</label>
+                            <input type="text" class="form-control regulation-field" name="booking_regulation.{{ key }}" value="{{ regulation.data.booking_regulation[key] if regulation and regulation.data and regulation.data.booking_regulation else '' }}">
+                        </div>
+                        {% endfor %}
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-success">Сохранить</button>
+                            <button type="button" id="start-auto-btn" class="btn btn-outline-primary">Заполнить автоматически</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <!-- Статичный просмотр с inline-редактированием -->
+                    <div id="regulation-static">
+                        <h5>Внутренний регламент</h5>
+                        {% set internal_fields = [
+                            ('company', 'Название компании'),
+                            ('fixation_address', 'Адрес/канал фиксации'),
+                            ('fixation_period', 'Срок фиксации'),
+                            ('commerce_fixation', 'Фиксация коммерции'),
+                            ('foreign_numbers_fixation', 'Фиксация иностранных номеров'),
+                            ('cross_fixation', 'Сквозная ли фиксация'),
+                            ('fixation_start', 'С какого момента фиксируется'),
+                            ('uniqueness_extension', 'Как продлить уникальность'),
+                            ('viewing_appointment', 'Как записывать на просмотр'),
+                            ('escort_required', 'Нужно ли сопровождение'),
+                            ('inspection_report_required', 'Нужен ли акт просмотра'),
+                            ('developer_emails', 'Проверить актуальные почты'),
+                            ('response_time', 'Примерный срок ответов'),
+                            ('notes', 'Примечание')
+                        ] %}
+                        {% for key, label in internal_fields %}
+                        <div class="field-row mb-2" data-key="internal_regulation.{{ key }}">
+                            <dt class="col-sm-4">{{ label }}</dt>
+                            <dd class="col-sm-8 d-flex align-items-center">
+                                <span class="field-value">{{ regulation.data.internal_regulation[key] if regulation.data.internal_regulation[key] else '—' }}</span>
+                                <button class="btn btn-sm btn-outline-secondary ms-2 edit-field-btn">✎</button>
+                                <div class="edit-field-group ms-2" style="display:none;">
+                                    <input type="text" class="form-control form-control-sm field-input" value="{{ regulation.data.internal_regulation[key] or '' }}">
+                                    <button class="btn btn-sm btn-success save-field-btn">✔</button>
+                                    <button class="btn btn-sm btn-outline-danger cancel-field-btn">✖</button>
+                                </div>
+                            </dd>
+                        </div>
+                        {% endfor %}
+
+                        <h5>Регламент бронирования</h5>
+                        {% set booking_fields = [
+                            ('how_to_update_tariffs', 'Как обновлять тарифы'),
+                            ('how_to_update_remains', 'Как обновлять остатки')
+                        ] %}
+                        {% for key, label in booking_fields %}
+                        <div class="field-row mb-2" data-key="booking_regulation.{{ key }}">
+                            <dt class="col-sm-4">{{ label }}</dt>
+                            <dd class="col-sm-8 d-flex align-items-center">
+                                <span class="field-value">{{ regulation.data.booking_regulation[key] if regulation.data.booking_regulation[key] else '—' }}</span>
+                                <button class="btn btn-sm btn-outline-secondary ms-2 edit-field-btn">✎</button>
+                                <div class="edit-field-group ms-2" style="display:none;">
+                                    <input type="text" class="form-control form-control-sm field-input" value="{{ regulation.data.booking_regulation[key] or '' }}">
+                                    <button class="btn btn-sm btn-success save-field-btn">✔</button>
+                                    <button class="btn btn-sm btn-outline-danger cancel-field-btn">✖</button>
+                                </div>
+                            </dd>
+                        </div>
+                        {% endfor %}
+
+                        {% if regulation.status != 'Выполнено' %}
+                        <div class="text-end mt-2">
+                            <a href="?edit=1" class="btn btn-outline-secondary btn-sm">Редактировать всё</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна (без изменений) -->
+<div class="modal fade" id="addComplexModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('admin.add_complex', dev_id=developer.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Добавить ЖК</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="text" class="form-control mb-2" name="name" placeholder="Название" required>
+          <input type="text" class="form-control mb-2" name="city" placeholder="Город">
+          <select class="form-select mb-2" name="region">
+            <option value="">Выберите регион</option>
+            <option value="Москва и МО">Москва и МО</option>
+            <option value="Санкт-Петербург и ЛО">Санкт-Петербург и ЛО</option>
+            <option value="Краснодарский край">Краснодарский край</option>
+          </select>
+          <input type="text" class="form-control mb-2" name="property_type" placeholder="Тип недвижимости">
+          <div class="input-group mb-2">
+            <input type="text" class="form-control commission-input" name="commission" placeholder="Комиссия">
+            <span class="input-group-text">%</span>
           </div>
-        {% endif %}
-      </div>
+          <input type="text" class="form-control" name="contact_person" placeholder="Куратор">
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Добавить</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
 
-<!-- Модальные окна -->
-<div id="modalBackdrop" class="modal-backdrop" onclick="closeAllModals()"></div>
-
-{% macro modal(id, title, content) %}
-<div id="{{ id }}" class="custom-modal">
-  <div class="custom-modal-content">
-    <div class="custom-modal-header">
-      <h5>{{ title }}</h5>
-      <button class="btn btn-icon" onclick="closeModal('{{ id }}')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-    <div class="custom-modal-body">
-      {{ content }}
+<div class="modal fade" id="addContactModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('admin.add_contact', dev_id=developer.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Добавить контакт</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <select class="form-select mb-2" name="contact_type">
+            <option value="curator">Куратор</option>
+            <option value="rop">РОП</option>
+            <option value="partner_head">Руководитель партнёрского отдела</option>
+            <option value="doc_flow">Документооборот</option>
+          </select>
+          <input type="text" class="form-control mb-2" name="name" placeholder="Имя" required>
+          <input type="tel" class="form-control mb-2 phone-mask" name="phone" placeholder="+7 (999) 999-99-99">
+          <input type="email" class="form-control" name="email" placeholder="Email">
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Добавить</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
-{% endmacro %}
-
-{{ modal('addComplexModal', 'Добавить ЖК',
-'<form method="POST" action="' + url_for('admin.add_complex', dev_id=developer.id) + '">
-  <input type="text" class="input mb-2" name="name" placeholder="Название" required>
-  <input type="text" class="input mb-2" name="city" placeholder="Город">
-  <select class="input mb-2" name="region">
-    <option value="">Выберите регион</option>
-    <option value="Москва и МО">Москва и МО</option>
-    <option value="Санкт-Петербург и ЛО">Санкт-Петербург и ЛО</option>
-    <option value="Краснодарский край">Краснодарский край</option>
-  </select>
-  <input type="text" class="input mb-2" name="property_type" placeholder="Тип недвижимости">
-  <div class="input-group mb-2" style="display:flex; align-items:center;">
-    <input type="text" class="input commission-input" name="commission" placeholder="Комиссия" style="flex:1;">
-    <span style="margin-left:8px;">%</span>
-  </div>
-  <input type="text" class="input" name="contact_person" placeholder="Куратор">
-  <button type="submit" class="btn btn-primary mt-3">Добавить</button>
-</form>')
-}}
-
-{{ modal('addContactModal', 'Добавить контакт',
-'<form method="POST" action="' + url_for('admin.add_contact', dev_id=developer.id) + '">
-  <select class="input mb-2" name="contact_type">
-    <option value="curator">Куратор</option>
-    <option value="rop">РОП</option>
-    <option value="partner_head">Руководитель партнёрского отдела</option>
-    <option value="doc_flow">Документооборот</option>
-  </select>
-  <input type="text" class="input mb-2" name="name" placeholder="Имя" required>
-  <input type="tel" class="input mb-2 phone-mask" name="phone" placeholder="+7 (999) 999-99-99">
-  <input type="email" class="input" name="email" placeholder="Email">
-  <button type="submit" class="btn btn-primary mt-3">Добавить</button>
-</form>')
-}}
 
 {% for rc in developer.complexes %}
-{{ modal('editComplexModal'+rc.id|string, 'Редактировать ЖК',
-'<form method="POST" action="' + url_for('admin.edit_complex', complex_id=rc.id) + '">
-  <input type="text" class="input mb-2" name="name" value="' + rc.name + '" placeholder="Название">
-  <input type="text" class="input mb-2" name="city" value="' + (rc.city or '') + '" placeholder="Город">
-  <select class="input mb-2" name="region">
-    <option value="">Выберите регион</option>
-    <option value="Москва и МО" {% if rc.region == "Москва и МО" %}selected{% endif %}>Москва и МО</option>
-    <option value="Санкт-Петербург и ЛО" {% if rc.region == "Санкт-Петербург и ЛО" %}selected{% endif %}>Санкт-Петербург и ЛО</option>
-    <option value="Краснодарский край" {% if rc.region == "Краснодарский край" %}selected{% endif %}>Краснодарский край</option>
-  </select>
-  <input type="text" class="input mb-2" name="property_type" value="' + (rc.property_type or '') + '" placeholder="Тип недвижимости">
-  <div class="input-group mb-2" style="display:flex; align-items:center;">
-    <input type="text" class="input commission-input" name="commission" value="' + (rc.commission|string) + '" style="flex:1;">
-    <span style="margin-left:8px;">%</span>
+<div class="modal fade" id="editComplexModal{{ rc.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('admin.edit_complex', complex_id=rc.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Редактировать ЖК</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="text" class="form-control mb-2" name="name" value="{{ rc.name }}" placeholder="Название">
+          <input type="text" class="form-control mb-2" name="city" value="{{ rc.city }}" placeholder="Город">
+          <select class="form-select mb-2" name="region">
+            <option value="">Выберите регион</option>
+            <option value="Москва и МО" {% if rc.region == 'Москва и МО' %}selected{% endif %}>Москва и МО</option>
+            <option value="Санкт-Петербург и ЛО" {% if rc.region == 'Санкт-Петербург и ЛО' %}selected{% endif %}>Санкт-Петербург и ЛО</option>
+            <option value="Краснодарский край" {% if rc.region == 'Краснодарский край' %}selected{% endif %}>Краснодарский край</option>
+          </select>
+          <input type="text" class="form-control mb-2" name="property_type" value="{{ rc.property_type }}" placeholder="Тип недвижимости">
+          <div class="input-group mb-2">
+            <input type="text" class="form-control commission-input" name="commission" value="{{ rc.commission }}">
+            <span class="input-group-text">%</span>
+          </div>
+          <input type="text" class="form-control" name="contact_person" value="{{ rc.contact_person }}" placeholder="Куратор">
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+      </form>
+    </div>
   </div>
-  <input type="text" class="input" name="contact_person" value="' + (rc.contact_person or '') + '" placeholder="Куратор">
-  <button type="submit" class="btn btn-primary mt-3">Сохранить</button>
-</form>')
-}}
+</div>
 {% endfor %}
 
 {% for c in developer.contacts %}
-{{ modal('editContactModal'+c.id|string, 'Редактировать контакт',
-'<form method="POST" action="' + url_for('admin.edit_contact', contact_id=c.id) + '">
-  <select class="input mb-2" name="contact_type">
-    <option value="curator" {% if c.contact_type == "curator" %}selected{% endif %}>Куратор</option>
-    <option value="rop" {% if c.contact_type == "rop" %}selected{% endif %}>РОП</option>
-    <option value="partner_head" {% if c.contact_type == "partner_head" %}selected{% endif %}>Руководитель партнёрского отдела</option>
-    <option value="doc_flow" {% if c.contact_type == "doc_flow" %}selected{% endif %}>Документооборот</option>
-  </select>
-  <input type="text" class="input mb-2" name="name" value="' + (c.name or '') + '" placeholder="Имя">
-  <input type="tel" class="input mb-2 phone-mask" name="phone" value="' + (c.phone or '') + '" placeholder="+7 (999) 999-99-99">
-  <input type="email" class="input" name="email" value="' + (c.email or '') + '" placeholder="Email">
-  <button type="submit" class="btn btn-primary mt-3">Сохранить</button>
-</form>')
-}}
+<div class="modal fade" id="editContactModal{{ c.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('admin.edit_contact', contact_id=c.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Редактировать контакт</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <select class="form-select mb-2" name="contact_type">
+            <option value="curator" {% if c.contact_type == 'curator' %}selected{% endif %}>Куратор</option>
+            <option value="rop" {% if c.contact_type == 'rop' %}selected{% endif %}>РОП</option>
+            <option value="partner_head" {% if c.contact_type == 'partner_head' %}selected{% endif %}>Руководитель партнёрского отдела</option>
+            <option value="doc_flow" {% if c.contact_type == 'doc_flow' %}selected{% endif %}>Документооборот</option>
+          </select>
+          <input type="text" class="form-control mb-2" name="name" value="{{ c.name }}" placeholder="Имя">
+          <input type="tel" class="form-control mb-2 phone-mask" name="phone" value="{{ c.phone }}" placeholder="+7 (999) 999-99-99">
+          <input type="email" class="form-control" name="email" value="{{ c.email }}" placeholder="Email">
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endfor %}
-
 {% endblock %}
 
 {% block scripts %}
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8-beta.17/jquery.inputmask.min.js"></script>
 <script>
-// Аккордеоны
-function toggleAccordion(id) {
-  const body = document.getElementById(id);
-  if (body.style.display === 'none' || body.style.display === '') {
-    body.style.display = 'block';
-  } else {
-    body.style.display = 'none';
-  }
-}
+    // Маска телефона
+    $(".phone-mask").inputmask("+7 (999) 999-99-99");
 
-// Модальные окна
-function openModal(id) {
-  document.getElementById(id).style.display = 'flex';
-  document.getElementById('modalBackdrop').style.display = 'block';
-}
-function closeModal(id) {
-  document.getElementById(id).style.display = 'none';
-  document.getElementById('modalBackdrop').style.display = 'none';
-}
-function closeAllModals() {
-  document.querySelectorAll('.custom-modal').forEach(m => m.style.display = 'none');
-  document.getElementById('modalBackdrop').style.display = 'none';
-}
-
-// Маска телефона
-$(".phone-mask").inputmask("+7 (999) 999-99-99");
-
-// Только цифры для комиссии
-$(document).on('input', '.commission-input', function() {
-    this.value = this.value.replace(/\D/g, '');
-});
-
-// Копирование в буфер
-function copyToClipboard(elementId) {
-    var text = document.getElementById(elementId).innerText;
-    navigator.clipboard.writeText(text).then(function() {
-        alert('Скопировано!');
+    // Только цифры для комиссии
+    $(document).on('input', '.commission-input', function() {
+        this.value = this.value.replace(/\D/g, '');
     });
-}
 
-// Inline-редактирование регламента
-document.querySelectorAll('.edit-field-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const row = this.closest('.field-row');
-        row.querySelector('.field-value').style.display = 'none';
-        this.style.display = 'none';
-        row.querySelector('.edit-field-group').style.display = 'flex';
-        row.querySelector('.field-input').focus();
-    });
-});
+    // Копирование в буфер
+    function copyToClipboard(elementId) {
+        var text = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(text).then(function() {
+            alert('Скопировано!');
+        });
+    }
 
-document.querySelectorAll('.save-field-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const row = this.closest('.field-row');
-        const key = row.dataset.key;
-        const input = row.querySelector('.field-input');
-        const value = input.value;
-        fetch('/admin/client/{{ developer.id }}/regulation/field', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ key: key, value: value })
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.status === 'ok') {
-                row.querySelector('.field-value').textContent = value || '—';
-                row.querySelector('.field-value').style.display = '';
-                row.querySelector('.edit-field-btn').style.display = '';
-                row.querySelector('.edit-field-group').style.display = 'none';
-            } else {
-                alert('Ошибка сохранения');
-            }
+    // Inline-редактирование полей регламента
+    document.querySelectorAll('.edit-field-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const row = this.closest('.field-row');
+            row.querySelector('.field-value').style.display = 'none';
+            this.style.display = 'none';
+            row.querySelector('.edit-field-group').style.display = 'flex';
+            row.querySelector('.field-input').focus();
         });
     });
-});
 
-document.querySelectorAll('.cancel-field-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const row = this.closest('.field-row');
-        row.querySelector('.field-value').style.display = '';
-        row.querySelector('.edit-field-btn').style.display = '';
-        row.querySelector('.edit-field-group').style.display = 'none';
-    });
-});
-
-// Автоматическое заполнение регламента
-document.getElementById('start-auto-btn').addEventListener('click', function() {
-    var devId = '{{ developer.id }}';
-    var startUrl = '/admin/client/' + devId + '/regulation/start';
-    var statusUrl = '/admin/client/' + devId + '/regulation/status';
-    var autoBtn = this;
-    var fields = document.querySelectorAll('.regulation-field');
-    fields.forEach(function(f) { f.disabled = true; f.style.backgroundColor = '#e9ecef'; });
-    autoBtn.disabled = true;
-
-    fetch(startUrl, { method: 'POST' })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (data.error) {
-                alert(data.error);
-                autoBtn.disabled = false;
-                fields.forEach(function(f) { f.disabled = false; f.style.backgroundColor = ''; });
-                return;
-            }
-            function poll() {
-                fetch(statusUrl)
-                    .then(function(r) { return r.json(); })
-                    .then(function(d) {
-                        if (d.status === 'Выполнено' || d.status.startsWith('Ошибка')) {
-                            autoBtn.textContent = 'Заполнить автоматически';
-                            autoBtn.disabled = false;
-                            fields.forEach(function(f) { f.disabled = false; f.style.backgroundColor = ''; });
-                            if (d.status === 'Выполнено') location.reload();
-                        } else {
-                            autoBtn.textContent = d.status;
-                            setTimeout(poll, 3000);
-                        }
-                    });
-            }
-            poll();
+    document.querySelectorAll('.save-field-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const row = this.closest('.field-row');
+            const key = row.dataset.key;
+            const input = row.querySelector('.field-input');
+            const value = input.value;
+            fetch('/admin/client/{{ developer.id }}/regulation/field', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ key: key, value: value })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    row.querySelector('.field-value').textContent = value || '—';
+                    row.querySelector('.field-value').style.display = '';
+                    row.querySelector('.edit-field-btn').style.display = '';
+                    row.querySelector('.edit-field-group').style.display = 'none';
+                } else {
+                    alert('Ошибка сохранения');
+                }
+            });
         });
-});
+    });
+
+    document.querySelectorAll('.cancel-field-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const row = this.closest('.field-row');
+            row.querySelector('.field-value').style.display = '';
+            row.querySelector('.edit-field-btn').style.display = '';
+            row.querySelector('.edit-field-group').style.display = 'none';
+        });
+    });
+
+    // Автоматическое заполнение
+    document.getElementById('start-auto-btn').addEventListener('click', function() {
+        var devId = '{{ developer.id }}';
+        var startUrl = '/admin/client/' + devId + '/regulation/start';
+        var statusUrl = '/admin/client/' + devId + '/regulation/status';
+        var autoBtn = this;
+        var fields = document.querySelectorAll('.regulation-field');
+        fields.forEach(function(f) { f.disabled = true; f.style.backgroundColor = '#e9ecef'; });
+        autoBtn.disabled = true;
+
+        fetch(startUrl, { method: 'POST' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.error) {
+                    alert(data.error);
+                    autoBtn.disabled = false;
+                    fields.forEach(function(f) { f.disabled = false; f.style.backgroundColor = ''; });
+                    return;
+                }
+                function poll() {
+                    fetch(statusUrl)
+                        .then(function(r) { return r.json(); })
+                        .then(function(d) {
+                            if (d.status === 'Выполнено' || d.status.startsWith('Ошибка')) {
+                                autoBtn.textContent = 'Заполнить автоматически';
+                                autoBtn.disabled = false;
+                                fields.forEach(function(f) { f.disabled = false; f.style.backgroundColor = ''; });
+                                if (d.status === 'Выполнено') location.reload();
+                            } else {
+                                autoBtn.textContent = d.status;
+                                setTimeout(poll, 3000);
+                            }
+                        });
+                }
+                poll();
+            });
+    });
 </script>
-
-<style>
-/* Стили для аккордеонов и модалок */
-.accordion-item {
-  border-bottom: 1px solid var(--border);
-}
-.accordion-header {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
-}
-.accordion-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 16px;
-  border-left: 1px solid var(--border);
-  transition: transform 0.2s;
-}
-.accordion-body {
-  display: none;
-  border-top: 1px solid var(--border);
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.custom-modal {
-  display: none;
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-.custom-modal-content {
-  background: var(--surface);
-  border-radius: var(--radius-24);
-  padding: 24px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: var(--shadow-large);
-}
-.custom-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.custom-modal-header h5 {
-  font-size: 18px;
-  font-weight: 600;
-}
-.modal-backdrop {
-  display: none;
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(15,23,42,.24);
-  backdrop-filter: blur(12px);
-  z-index: 999;
-}
-</style>
 {% endblock %}
