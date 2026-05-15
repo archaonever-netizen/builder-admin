@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template  # Добавили render_template
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from config import Config
 from supabase import create_client, Client
@@ -12,22 +12,24 @@ def create_app():
 
     db.init_app(app)
 
-    # Инициализация Supabase клиента
     supabase: Client = create_client(app.config['SUPABASE_URL'], app.config['SUPABASE_SERVICE_ROLE_KEY'])
     app.supabase = supabase
 
-    # --- Главная страница выбора роли ---
     @app.route('/')
     def role_selection():
         return render_template('index.html')
-    # -----------------------------------
 
-    # Регистрируем blueprint администратора
+    # Регистрируем blueprint администратора (существующий)
     from app.admin.routes import admin_bp
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
+    # Регистрируем blueprint менеджера (НОВЫЙ)
+    from app.manager.routes import manager_bp
+    app.register_blueprint(manager_bp, url_prefix='/manager')
+
     with app.app_context():
         from app.models import Developer, Draft, ResidentialComplex, Contact, Document, Regulation
+        from app.models import Agent, Employee, Presentation   # <-- новые модели
         db.create_all()
 
     return app
