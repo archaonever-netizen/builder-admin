@@ -161,7 +161,6 @@
                 </div>`;
             container.appendChild(div);
         });
-        // Маска комиссии
         document.querySelectorAll('.commission-input').forEach(input => {
             input.addEventListener('input', function() {
                 this.value = this.value.replace(/\D/g, '');
@@ -219,7 +218,6 @@
                 </div>`;
             container.appendChild(div);
         });
-        // Применить маску телефона
         $(".phone-mask").inputmask("+7 (999) 999-99-99");
     }
 
@@ -239,7 +237,6 @@
         saveDraft();
     });
 
-    // Автосохранение при вводе в основных полях
     document.querySelectorAll('#field-name, #field-channels, #field-chessboard_link, #field-feed').forEach(el => {
         el.addEventListener('input', saveDraft);
     });
