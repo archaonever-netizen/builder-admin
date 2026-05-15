@@ -9,10 +9,11 @@
     <div class="col-md-4 mb-3">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title">{{ dev.name }}</h5>
+                <a href="{{ url_for('admin.client_card', dev_id=dev.id) }}" class="text-decoration-none text-dark">
+                    <h5 class="card-title">{{ dev.name }}</h5>
+                </a>
                 <p class="card-text">Создан: {{ dev.created_at.strftime('%d.%m.%Y') }}</p>
                 <div class="btn-group">
-                    <a href="{{ url_for('admin.client_card', dev_id=dev.id) }}" class="btn btn-outline-secondary btn-sm">Карточка</a>
                     <a href="{{ url_for('admin.edit_developer', dev_id=dev.id) }}" class="btn btn-outline-warning btn-sm">✎</a>
                     <form action="{{ url_for('admin.delete_developer', dev_id=dev.id) }}" method="POST" onsubmit="return confirm('Вы уверены, что хотите удалить {{ dev.name }}?')">
                         <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
