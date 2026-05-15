@@ -33,9 +33,9 @@
 <div class="card mb-3">
     <div class="card-body p-0">
 
-        <!-- Аккордеон «Сотрудники» – заголовок единообразный -->
-        <div class="p-0" id="headingEmployees">
-            <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseEmployees" aria-expanded="false">
+        <!-- Аккордеон «Сотрудники» -->
+        <div id="headingEmployees">
+            <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseEmployees" aria-expanded="false" aria-controls="collapseEmployees">
                 <div class="flex-fill p-3 text-center" style="font-size: 1rem; font-weight: 500;">
                     Сотрудники: {{ agent.employees|length }}
                 </div>
@@ -45,13 +45,54 @@
             </div>
         </div>
         <div id="collapseEmployees" class="collapse" aria-labelledby="headingEmployees">
-            <!-- ... тело аккордеона без изменений ... -->
+            <div class="p-3">
+                {% if agent.employees %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-borderless align-middle text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ФИО</th>
+                                <th>Телефон</th>
+                                <th>Мессенджер</th>
+                                <th>Фиксации</th>
+                                <th>Брони</th>
+                                <th>Сделки</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for emp in agent.employees %}
+                            <tr>
+                                <td>{{ emp.full_name }}</td>
+                                <td>{{ emp.phone or '—' }}</td>
+                                <td>{{ emp.messenger or '—' }}</td>
+                                <td>{{ emp.fixations_count }}</td>
+                                <td>{{ emp.bookings_count }}</td>
+                                <td>{{ emp.deals_count }}</td>
+                                <td>
+                                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editEmployeeModal{{ emp.id }}">✎</button>
+                                    <form action="{{ url_for('manager.delete_employee', employee_id=emp.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить сотрудника {{ emp.full_name }}?')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">Нет добавленных сотрудников.</p>
+                {% endif %}
+                <div class="text-end mt-2">
+                    <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">+ Добавить сотрудника</button>
+                </div>
+            </div>
         </div>
         <hr class="m-0">
 
-        <!-- Аккордеон «Презентации» – заголовок единообразный -->
-        <div class="p-0" id="headingPresentations">
-            <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapsePresentations" aria-expanded="false">
+        <!-- Аккордеон «Презентации» -->
+        <div id="headingPresentations">
+            <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapsePresentations" aria-expanded="false" aria-controls="collapsePresentations">
                 <div class="flex-fill p-3 text-center" style="font-size: 1rem; font-weight: 500;">
                     Презентации: {{ current_month_count }} (в этом месяце) | {{ all_time_count }} (за весь период)
                 </div>
@@ -61,13 +102,18 @@
             </div>
         </div>
         <div id="collapsePresentations" class="collapse" aria-labelledby="headingPresentations">
-            <!-- ... тело без изменений ... -->
+            <div class="p-3">
+                <p><strong>В этом месяце:</strong> {{ current_month_count }} | <strong>За весь период:</strong> {{ all_time_count }}</p>
+                <p><strong>Даты презентаций:</strong> {{ presentation_dates|join(', ') if presentation_dates else '—' }}</p>
+                <p><strong>Дата последней презентации:</strong> {{ last_presentation_date.strftime('%d.%m.%Y') if last_presentation_date else '—' }}</p>
+                <p class="text-muted"><em>Материалы к презентациям появятся в следующем блоке</em></p>
+            </div>
         </div>
         <hr class="m-0">
 
-        <!-- Аккордеон «Клиенты в работе» – заголовок единообразный -->
-        <div class="p-0" id="headingClients">
-            <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseClients" aria-expanded="false">
+        <!-- Аккордеон «Клиенты в работе» -->
+        <div id="headingClients">
+            <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseClients" aria-expanded="false" aria-controls="collapseClients">
                 <div class="flex-fill p-3 text-center" style="font-size: 1rem; font-weight: 500;">
                     Клиенты в работе: {{ clients_current | default(0) }} (текущих) | Успешно: {{ clients_success | default(0) }} | Провалены: {{ clients_failed | default(0) }}
                 </div>
@@ -77,54 +123,101 @@
             </div>
         </div>
         <div id="collapseClients" class="collapse" aria-labelledby="headingClients">
-            <!-- ... заглушка ... -->
+            <div class="p-3 text-center text-muted">
+                <p>Раздел появится позже</p>
+                <p><small>Здесь будет подробная информация по клиентам из других блоков</small></p>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Модальные окна для сотрудников -->
+<!-- ===== Модальные окна для сотрудников ===== -->
 <!-- Добавить сотрудника -->
-<div class="modal fade" id="addEmployeeModal" tabindex="-1">
+<div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" action="{{ url_for('manager.add_employee', agent_id=agent.id) }}">
                 <div class="modal-header">
-                    <h5 class="modal-title">Добавить сотрудника</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="addEmployeeModalLabel">Добавить сотрудника</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="text" class="form-control mb-2" name="full_name" placeholder="ФИО" required>
-                    <input type="tel" class="form-control mb-2 phone-mask" name="phone" placeholder="+7 (999) 999-99-99">
-                    <input type="text" class="form-control mb-2" name="messenger" placeholder="Мессенджер (Telegram @...)">
-                    <input type="number" class="form-control mb-2" name="fixations_count" placeholder="Фиксации" value="0">
-                    <input type="number" class="form-control mb-2" name="bookings_count" placeholder="Брони" value="0">
-                    <input type="number" class="form-control" name="deals_count" placeholder="Сделки" value="0">
+                    <div class="mb-3">
+                        <label class="form-label">ФИО <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="full_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Телефон</label>
+                        <input type="tel" class="form-control phone-mask" name="phone">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Мессенджер</label>
+                        <input type="text" class="form-control" name="messenger" placeholder="Telegram @username">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Фиксации</label>
+                            <input type="number" class="form-control" name="fixations_count" value="0" min="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Брони</label>
+                            <input type="number" class="form-control" name="bookings_count" value="0" min="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Сделки</label>
+                            <input type="number" class="form-control" name="deals_count" value="0" min="0">
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
                     <button type="submit" class="btn btn-primary">Добавить</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Модальные окна редактирования сотрудников -->
 {% for emp in agent.employees %}
-<div class="modal fade" id="editEmployeeModal{{ emp.id }}" tabindex="-1">
+<div class="modal fade" id="editEmployeeModal{{ emp.id }}" tabindex="-1" aria-labelledby="editEmployeeModalLabel{{ emp.id }}" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" action="{{ url_for('manager.edit_employee', employee_id=emp.id) }}">
                 <div class="modal-header">
-                    <h5 class="modal-title">Редактировать сотрудника</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="editEmployeeModalLabel{{ emp.id }}">Редактировать сотрудника</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="text" class="form-control mb-2" name="full_name" value="{{ emp.full_name }}" required>
-                    <input type="tel" class="form-control mb-2 phone-mask" name="phone" value="{{ emp.phone }}">
-                    <input type="text" class="form-control mb-2" name="messenger" value="{{ emp.messenger }}">
-                    <input type="number" class="form-control mb-2" name="fixations_count" value="{{ emp.fixations_count }}">
-                    <input type="number" class="form-control mb-2" name="bookings_count" value="{{ emp.bookings_count }}">
-                    <input type="number" class="form-control" name="deals_count" value="{{ emp.deals_count }}">
+                    <div class="mb-3">
+                        <label class="form-label">ФИО <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="full_name" value="{{ emp.full_name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Телефон</label>
+                        <input type="tel" class="form-control phone-mask" name="phone" value="{{ emp.phone or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Мессенджер</label>
+                        <input type="text" class="form-control" name="messenger" value="{{ emp.messenger or '' }}">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Фиксации</label>
+                            <input type="number" class="form-control" name="fixations_count" value="{{ emp.fixations_count }}" min="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Брони</label>
+                            <input type="number" class="form-control" name="bookings_count" value="{{ emp.bookings_count }}" min="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Сделки</label>
+                            <input type="number" class="form-control" name="deals_count" value="{{ emp.deals_count }}" min="0">
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
                     <button type="submit" class="btn btn-primary">Сохранить</button>
                 </div>
             </form>
@@ -133,12 +226,18 @@
 </div>
 {% endfor %}
 {% endblock %}
+
 {% block scripts %}
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8-beta.17/jquery.inputmask.min.js"></script>
 <script>
     $(document).ready(function() {
         $('.phone-mask').inputmask("+7 (999) 999-99-99");
+        // Инициализация tooltips (если нужны)
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
     });
 </script>
 {% endblock %}
