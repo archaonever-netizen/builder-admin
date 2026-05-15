@@ -33,7 +33,7 @@
 <div class="card mb-3">
     <div class="card-body p-0">
 
-        <!-- Аккордеон «Сотрудники» -->
+        <!-- Аккордеон «Сотрудники» (без изменений) -->
         <div class="p-0" id="headingEmployees">
             <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseEmployees" aria-expanded="false">
                 <div class="flex-fill p-3">
@@ -88,13 +88,19 @@
         </div>
         <hr class="m-0">
 
-        <!-- Аккордеон «Презентации» (только чтение) -->
+        <!-- Аккордеон «Презентации» – ОБНОВЛЁННЫЙ ЗАГОЛОВОК -->
         <div class="p-0" id="headingPresentations">
             <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapsePresentations" aria-expanded="false">
                 <div class="flex-fill p-3">
-                    <span>
-                        Презентации: {{ current_month_count }} (в этом месяце) | {{ all_time_count }} (за весь период)
-                    </span>
+                    <table class="table table-sm table-borderless align-middle text-center mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Презентации: {{ current_month_count }} (в этом месяце)</th>
+                                <th>{{ all_time_count }} (за весь период)</th>
+                                <th>Последняя: {{ last_presentation_date.strftime('%d.%m.%Y') if last_presentation_date else '—' }}</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
                 <div class="p-3 d-flex align-items-center border-start">
                     <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapsePresentations">↕</button>
@@ -111,11 +117,19 @@
         </div>
         <hr class="m-0">
 
-        <!-- Аккордеон-заглушка «Клиенты в работе» -->
+        <!-- Аккордеон «Клиенты в работе» – ОБНОВЛЁННЫЙ ЗАГОЛОВОК -->
         <div class="p-0" id="headingClients">
             <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseClients" aria-expanded="false">
                 <div class="flex-fill p-3">
-                    <span>Клиенты в работе</span>
+                    <table class="table table-sm table-borderless align-middle text-center mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Клиенты в работе: {{ clients_current | default(0) }} (текущих)</th>
+                                <th>Успешно завершено: {{ clients_success | default(0) }}</th>
+                                <th>Провалены: {{ clients_failed | default(0) }}</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
                 <div class="p-3 d-flex align-items-center border-start">
                     <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapseClients">↕</button>
@@ -125,6 +139,7 @@
         <div id="collapseClients" class="collapse" aria-labelledby="headingClients">
             <div class="p-3 text-center text-muted">
                 <p>Раздел появится позже</p>
+                <p><small>Здесь будет подробная информация по клиентам из других блоков</small></p>
             </div>
         </div>
     </div>
