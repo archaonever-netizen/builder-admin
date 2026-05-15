@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Карточка контрагента{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ agent.name }}</h1>
+    <div>
+        <a href="{{ url_for('manager.edit_agent', agent_id=agent.id) }}" class="btn btn-outline-warning btn-sm">✎ Редактировать</a>
+        <form action="{{ url_for('manager.delete_agent', agent_id=agent.id) }}" method="POST" style="display:inline" onsubmit="return confirm('Удалить {{ agent.name }}?')">
+            <button type="submit" class="btn btn-outline-danger btn-sm">🗑 Удалить</button>
+        </form>
+        <a href="{{ url_for('manager.index') }}" class="btn btn-outline-secondary">← К списку</a>
+    </div>
+</div>
+
+<!-- Основная информация -->
+<div class="card mb-3">
+    <div class="card-header">Основное</div>
+    <div class="card-body">
+        <p><strong>Директор:</strong> {{ agent.director_name or '—' }} {{ agent.director_phone or '' }}</p>
+        <p><strong>Контактное лицо:</strong> {{ agent.contact_name or '—' }} {{ agent.contact_phone or '' }}
+            {% if not agent.messenger_linked and agent.messenger_contact %}
+                <br><small class="text-muted">Мессенджер: {{ agent.messenger_contact }}</small>
+            {% endif %}
+        </p>
+        <p><strong>Количество сотрудников (суммарно):</strong> {{ total_employees }}</p>
+        <p><strong>Количество фиксаций (суммарно):</strong> {{ total_fixations }}</p>
+        <p><strong>Количество бронирований (суммарно):</strong> {{ total_bookings }}</p>
+        <p><strong>Сделки по компании:</strong> {{ total_deals }}</p>
+    </div>
+</div>
+
+<!-- Единая карточка с аккордеонами -->
+<div class="card mb-3">
+    <div class="card-body p-0">
+
+        <!-- Аккордеон «Сотрудники» -->
+        <div class="p-0" id="headingEmployees">
+            <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseEmployees" aria-expanded="false">
+                <div class="flex-fill p-3">
+                    <table class="table table-sm table-borderless align-middle text-center mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Сотрудники: {{ agent.employees|length }}</th>
+                                <th>Фиксации</th>
+                                <th>Брони</th>
+                                <th>Сделки</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+                <div class="p-3 d-flex align-items-center border-start">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapseEmployees">↕</button>
+                </div>
+            </div>
+        </div>
+        <div id="collapseEmployees" class="collapse" aria-labelledby="headingEmployees">
+            <div class="p-3">
+                {% if agent.employees %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-borderless align-middle text-center">
+                        <tbody>
+                            {% for emp in agent.employees %}
+                            <tr>
+                                <td>{{ emp.full_name }}</td>
+                                <td>{{ emp.phone or '—' }}</td>
+                                <td>{{ emp.messenger or '—' }}</td>
+                                <td>{{ emp.fixations_count }}</td>
+                                <td>{{ emp.bookings_count }}</td>
+                                <td>{{ emp.deals_count }}</td>
+                                <td>
+                                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editEmployeeModal{{ emp.id }}">✎</button>
+                                    <form action="{{ url_for('manager.delete_employee', employee_id=emp.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить сотрудника {{ emp.full_name }}?')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p>Сотрудники не добавлены.</p>
+                {% endif %}
+                <div class="text-end mt-2">
+                    <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">+ Добавить сотрудника</button>
+                </div>
+            </div>
+        </div>
+        <hr class="m-0">
+
+        <!-- Аккордеон «Презентации» (только чтение) -->
+        <div class="p-0" id="headingPresentations">
+            <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapsePresentations" aria-expanded="false">
+                <div class="flex-fill p-3">
+                    <span>
+                        Презентации: {{ current_month_count }} (в этом месяце) | {{ all_time_count }} (за весь период)
+                    </span>
+                </div>
+                <div class="p-3 d-flex align-items-center border-start">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapsePresentations">↕</button>
+                </div>
+            </div>
+        </div>
+        <div id="collapsePresentations" class="collapse" aria-labelledby="headingPresentations">
+            <div class="p-3">
+                <p><strong>В этом месяце:</strong> {{ current_month_count }} | <strong>За весь период:</strong> {{ all_time_count }}</p>
+                <p><strong>Даты презентаций:</strong> {{ presentation_dates|join(', ') if presentation_dates else '—' }}</p>
+                <p><strong>Дата последней презентации:</strong> {{ last_presentation_date.strftime('%d.%m.%Y') if last_presentation_date else '—' }}</p>
+                <p class="text-muted"><em>Материалы к презентациям появятся в следующем блоке</em></p>
+            </div>
+        </div>
+        <hr class="m-0">
+
+        <!-- Аккордеон-заглушка «Клиенты в работе» -->
+        <div class="p-0" id="headingClients">
+            <div class="d-flex align-items-stretch" role="button" data-bs-toggle="collapse" data-bs-target="#collapseClients" aria-expanded="false">
+                <div class="flex-fill p-3">
+                    <span>Клиенты в работе</span>
+                </div>
+                <div class="p-3 d-flex align-items-center border-start">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="event.stopPropagation();" data-bs-toggle="collapse" data-bs-target="#collapseClients">↕</button>
+                </div>
+            </div>
+        </div>
+        <div id="collapseClients" class="collapse" aria-labelledby="headingClients">
+            <div class="p-3 text-center text-muted">
+                <p>Раздел появится позже</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна для сотрудников -->
+<!-- Добавить сотрудника -->
+<div class="modal fade" id="addEmployeeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('manager.add_employee', agent_id=agent.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить сотрудника</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-2" name="full_name" placeholder="ФИО" required>
+                    <input type="tel" class="form-control mb-2 phone-mask" name="phone" placeholder="+7 (999) 999-99-99">
+                    <input type="text" class="form-control mb-2" name="messenger" placeholder="Мессенджер (Telegram @...)">
+                    <input type="number" class="form-control mb-2" name="fixations_count" placeholder="Фиксации" value="0">
+                    <input type="number" class="form-control mb-2" name="bookings_count" placeholder="Брони" value="0">
+                    <input type="number" class="form-control" name="deals_count" placeholder="Сделки" value="0">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% for emp in agent.employees %}
+<div class="modal fade" id="editEmployeeModal{{ emp.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('manager.edit_employee', employee_id=emp.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактировать сотрудника</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-2" name="full_name" value="{{ emp.full_name }}" required>
+                    <input type="tel" class="form-control mb-2 phone-mask" name="phone" value="{{ emp.phone }}">
+                    <input type="text" class="form-control mb-2" name="messenger" value="{{ emp.messenger }}">
+                    <input type="number" class="form-control mb-2" name="fixations_count" value="{{ emp.fixations_count }}">
+                    <input type="number" class="form-control mb-2" name="bookings_count" value="{{ emp.bookings_count }}">
+                    <input type="number" class="form-control" name="deals_count" value="{{ emp.deals_count }}">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8-beta.17/jquery.inputmask.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.phone-mask').inputmask("+7 (999) 999-99-99");
+    });
+</script>
+{% endblock %}
