@@ -584,14 +584,14 @@ document.getElementById('start-auto-btn').addEventListener('click', function() {
 }
 .accordion-header {
   display: flex;
-  align-items: center;          /* Было stretch – стало center */
+  align-items: center;
   cursor: pointer;
   user-select: none;
 }
 .accordion-toggle {
   display: flex;
   align-items: center;
-  justify-content: center;      /* Добавлено для центрирования иконки */
+  justify-content: center;
   padding: 0 16px;
   border-left: 1px solid var(--border);
   transition: transform 0.2s;
@@ -599,7 +599,6 @@ document.getElementById('start-auto-btn').addEventListener('click', function() {
 .accordion-body {
   display: none;
   border-top: 1px solid var(--border);
-  /* Гарантируем, что блок раскрывается на всю ширину */
   width: 100%;
   box-sizing: border-box;
 }
