@@ -538,7 +538,7 @@ document.querySelectorAll('.cancel-field-btn').forEach(btn => {
     });
 });
 
-// Автоматическое заполнение
+// Автоматическое заполнение регламента
 document.getElementById('start-auto-btn').addEventListener('click', function() {
     var devId = '{{ developer.id }}';
     var startUrl = '/admin/client/' + devId + '/regulation/start';
