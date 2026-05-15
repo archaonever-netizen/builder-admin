@@ -16,7 +16,6 @@
 <body>
   {% if not hide_layout %}
   <div class="app-layout">
-    <!-- Сайдбар -->
     <aside class="sidebar">
       <div class="sidebar-logo">
         <svg class="logo-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -72,7 +71,6 @@
       </div>
     </aside>
 
-    <!-- Хедер -->
     <header class="header">
       <div class="header-search-wrapper">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
@@ -83,7 +81,6 @@
       </div>
     </header>
 
-    <!-- Контент -->
     <main class="content">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -100,7 +97,6 @@
   </div>
 
   {% else %}
-  <!-- Логин и подобные страницы без макета -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
     <div class="flash-messages" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999;">
