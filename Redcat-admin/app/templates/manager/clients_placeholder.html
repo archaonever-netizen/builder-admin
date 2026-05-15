@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Клиенты в работе{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Клиенты в работе</h1>
+    <a href="{{ url_for('manager.index') }}" class="btn btn-outline-secondary">← Назад к контрагентам</a>
+</div>
+<div class="text-center py-5">
+    <h4 class="text-muted">Этот раздел появится в следующих обновлениях</h4>
+    <p>Здесь будет список клиентов, сделки и коммуникации.</p>
+</div>
+{% endblock %}
