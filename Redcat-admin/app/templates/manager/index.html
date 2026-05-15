@@ -2,31 +2,37 @@
 {% block title %}Менеджер – Контрагенты{% endblock %}
 {% block content %}
 <style>
-    /* Основной контейнер слайдера – отступы для стрелок на десктопе */
+    /* Внешний контейнер – ограничивает ширину и создаёт отступы для стрелок */
+    .slider-wrapper {
+        position: relative;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 60px;   /* место под стрелки */
+    }
+
+    /* Область слайдера – без отступов, overflow скрывает соседние панели */
     .slider-viewport {
         overflow: hidden;
-        margin: 0 auto;
-        padding-left: 50px;  /* освобождаем место слева под стрелку */
-        padding-right: 50px; /* освобождаем место справа */
-        max-width: 1200px;   /* чтобы на широких экранах контент не разъезжался */
     }
+
     #sliderTrack {
         display: flex;
         transition: transform 0.4s ease;
         width: 200%;
     }
+
     .slider-panel {
         width: 50%;
         flex-shrink: 0;
         padding: 1rem 0;
     }
 
-    /* Фиксированные стрелки – всегда по центру экрана, поверх всего */
+    /* Стрелки – абсолютное позиционирование внутри wrapper, привязаны к контенту */
     .slider-btn {
-        position: fixed;
+        position: absolute;
         top: 50%;
         transform: translateY(-50%);
-        z-index: 1050;
+        z-index: 10;
         width: 44px;
         height: 44px;
         border-radius: 50%;
@@ -39,27 +45,31 @@
         outline: none !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
+
     .slider-btn:focus,
     .slider-btn:active {
         outline: none;
         box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
+
     .btn-slider-left {
-        left: 20px;
+        left: 10px;
         background-color: #6c757d;
         color: white;
     }
+
     .btn-slider-right {
-        right: 20px;
+        right: 10px;
         background-color: #1a1f36;
         color: white;
     }
-    /* Состояние disabled – только прозрачность, фон не меняем */
+
     .slider-btn:disabled {
         opacity: 0.3;
         pointer-events: none;
     }
-    /* Убираем любые эффекты Bootstrap при клике */
+
+    /* Убираем эффекты Bootstrap при клике */
     .slider-btn.btn-primary:not(:disabled):not(.disabled):active,
     .slider-btn.btn-primary:not(:disabled):not(.disabled).active,
     .slider-btn.btn-outline-secondary:not(:disabled):not(.disabled):active,
@@ -74,64 +84,64 @@
         box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
     }
 
-    /* Мобильные устройства: стрелки скрываем, убираем отступы */
+    /* Мобильные: стрелки скрываем, убираем отступы */
     @media (max-width: 767.98px) {
+        .slider-wrapper {
+            padding: 0;
+        }
         .slider-btn {
             display: none;
-        }
-        .slider-viewport {
-            padding-left: 0;
-            padding-right: 0;
         }
     }
 </style>
 
-<!-- Кнопки-стрелки (фиксированные) -->
-<button id="slideLeftBtn" class="slider-btn btn-slider-left" disabled aria-label="Предыдущий экран">←</button>
-<button id="slideRightBtn" class="slider-btn btn-slider-right" aria-label="Следующий экран">→</button>
+<div class="slider-wrapper">
+    <!-- Стрелки теперь внутри wrapper, не выходят за границы контента -->
+    <button id="slideLeftBtn" class="slider-btn btn-slider-left" disabled aria-label="Предыдущий экран">←</button>
+    <button id="slideRightBtn" class="slider-btn btn-slider-right" aria-label="Следующий экран">→</button>
 
-<!-- Слайдер -->
-<div class="slider-viewport">
-    <div id="sliderTrack">
-        <!-- Экран 1: Контрагенты -->
-        <div class="slider-panel">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1>Контрагенты (агентства)</h1>
-                <a href="{{ url_for('manager.add_agent_form') }}" class="btn btn-primary btn-lg">+ Новый контрагент</a>
-            </div>
-            {% if agents %}
-            <div class="row">
-                {% for agent in agents %}
-                <div class="col-md-4 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ agent.name }}</h5>
-                            <p class="card-text">Создан: {{ agent.created_at.strftime('%d.%m.%Y') }}</p>
-                            <div class="btn-group">
-                                <a href="{{ url_for('manager.agent_card', agent_id=agent.id) }}" class="btn btn-outline-secondary btn-sm">Карточка</a>
-                                <a href="{{ url_for('manager.edit_agent', agent_id=agent.id) }}" class="btn btn-outline-warning btn-sm">✎</a>
-                                <form action="{{ url_for('manager.delete_agent', agent_id=agent.id) }}" method="POST" onsubmit="return confirm('Удалить {{ agent.name }}?')">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
-                                </form>
+    <div class="slider-viewport">
+        <div id="sliderTrack">
+            <!-- Экран 1: Контрагенты -->
+            <div class="slider-panel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1>Контрагенты (агентства)</h1>
+                    <a href="{{ url_for('manager.add_agent_form') }}" class="btn btn-primary btn-lg">+ Новый контрагент</a>
+                </div>
+                {% if agents %}
+                <div class="row">
+                    {% for agent in agents %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ agent.name }}</h5>
+                                <p class="card-text">Создан: {{ agent.created_at.strftime('%d.%m.%Y') }}</p>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('manager.agent_card', agent_id=agent.id) }}" class="btn btn-outline-secondary btn-sm">Карточка</a>
+                                    <a href="{{ url_for('manager.edit_agent', agent_id=agent.id) }}" class="btn btn-outline-warning btn-sm">✎</a>
+                                    <form action="{{ url_for('manager.delete_agent', agent_id=agent.id) }}" method="POST" onsubmit="return confirm('Удалить {{ agent.name }}?')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
+                {% else %}
+                <p>Нет ни одного контрагента. Нажмите «+ Новый контрагент» чтобы добавить.</p>
+                {% endif %}
             </div>
-            {% else %}
-            <p>Нет ни одного контрагента. Нажмите «+ Новый контрагент» чтобы добавить.</p>
-            {% endif %}
-        </div>
 
-        <!-- Экран 2: Клиенты в работе -->
-        <div class="slider-panel">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1>Клиенты в работе</h1>
-            </div>
-            <div class="text-center py-5">
-                <h4 class="text-muted">Этот раздел появится в следующих обновлениях</h4>
-                <p>Здесь будет список клиентов, сделки и коммуникации.</p>
+            <!-- Экран 2: Клиенты в работе -->
+            <div class="slider-panel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1>Клиенты в работе</h1>
+                </div>
+                <div class="text-center py-5">
+                    <h4 class="text-muted">Этот раздел появится в следующих обновлениях</h4>
+                    <p>Здесь будет список клиентов, сделки и коммуникации.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -169,7 +179,7 @@
             if (currentPanel < 1) slideTo(currentPanel + 1);
         });
 
-        // Свайп для мобильных
+        // Свайп на мобильных
         let startX = 0;
         track.addEventListener('touchstart', (e) => {
             startX = e.touches[0].clientX;
