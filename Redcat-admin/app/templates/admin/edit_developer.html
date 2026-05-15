@@ -117,14 +117,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8-beta.17/jquery.inputmask.min.js"></script>
 
 <script>
-    // Исходные данные комплексов и контактов из шаблона
     let complexes = {{ dev.complexes | tojson | safe }};
     let contacts = {{ dev.contacts | tojson | safe }};
-    let uploadedFiles = [];  // сюда будут добавляться ID новых загруженных файлов
+    let uploadedFiles = [];
 
-    // Приводим к нужной структуре (массивы с объектами нужных полей)
     complexes = complexes.map(c => ({
-        id: c.id,  // если есть id, сохраним для идентификации
+        id: c.id,
         name: c.name || '',
         city: c.city || '',
         region: c.region || '',
@@ -141,7 +139,6 @@
         email: c.email || ''
     }));
 
-    // Функции рендеринга
     function renderComplexes() {
         const container = document.getElementById('complexes-container');
         container.innerHTML = '';
@@ -182,7 +179,6 @@
                 </div>`;
             container.appendChild(div);
         });
-        // Маска комиссии
         document.querySelectorAll('.commission-input').forEach(input => {
             input.addEventListener('input', function() {
                 this.value = this.value.replace(/\D/g, '');
@@ -253,7 +249,6 @@
         renderContacts();
     });
 
-    // Загрузка файлов (новая)
     async function uploadFile(file) {
         const formData = new FormData();
         formData.append('file', file);
@@ -287,21 +282,18 @@
         info.textContent = `Загружено файлов: ${uploadedFiles.length}`;
     });
 
-    // Отправка формы
     document.getElementById('submit-btn').addEventListener('click', async () => {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = "{{ url_for('admin.edit_developer', dev_id=dev.id) }}";
         form.style.display = 'none';
 
-        // Основные поля
         const fields = {
             name: document.getElementById('field-name').value,
             channels: document.getElementById('field-channels').value,
             chessboard_link: document.getElementById('field-chessboard_link').value,
             feed: document.getElementById('field-feed').value,
             complexes: JSON.stringify(complexes.map(c => ({
-                // если id существовал, сохраняем
                 id: c.id,
                 name: c.name,
                 city: c.city,
@@ -327,7 +319,6 @@
             form.appendChild(input);
         }
 
-        // ID новых загруженных файлов
         uploadedFiles.forEach(id => {
             const input = document.createElement('input');
             input.type = 'hidden';
@@ -340,7 +331,6 @@
         form.submit();
     });
 
-    // Первоначальный рендеринг
     renderComplexes();
     renderContacts();
 </script>
