@@ -461,3 +461,28 @@ def import_execute():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Ошибка при сохранении: {str(e)}'}), 500
+
+@admin_bp.route('/delete_selected', methods=['POST'])
+def delete_selected():
+    data = request.get_json()
+    if not data or 'ids' not in data:
+        return jsonify({'error': 'Не указаны id'}), 400
+    ids = data['ids']
+    if not isinstance(ids, list) or len(ids) == 0:
+        return jsonify({'error': 'ids должен быть непустым списком'}), 400
+    
+    try:
+        developers = Developer.query.filter(Developer.id.in_(ids)).all()
+        for dev in developers:
+            # Удаляем связанные файлы из Supabase
+            for doc in dev.documents:
+                try:
+                    current_app.supabase.storage.from_('developer-docs').remove([doc.filename])
+                except Exception as e:
+                    current_app.logger.error(f"Не удалось удалить файл {doc.filename}: {e}")
+            db.session.delete(dev)
+        db.session.commit()
+        return jsonify({'status': 'success', 'deleted': len(developers)})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Ошибка при удалении: {str(e)}'}), 500
