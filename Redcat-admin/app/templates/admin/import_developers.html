@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+{% block title %}Импорт застройщиков{% endblock %}
+{% block content %}
+<style>
+    .import-card {
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    .upload-area {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #f8fafc;
+    }
+    .upload-area:hover {
+        border-color: #1a1f36;
+        background: #f1f5f9;
+    }
+    .upload-area.dragover {
+        border-color: #1a1f36;
+        background: #e2e8f0;
+    }
+    .upload-icon {
+        font-size: 2.5rem;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+    }
+    .mapping-select {
+        min-width: 180px;
+    }
+    .table-preview {
+        max-height: 400px;
+        overflow: auto;
+        font-size: 0.85rem;
+    }
+    .btn-import {
+        background-color: #1a1f36;
+        color: white;
+        border-radius: 10px;
+        padding: 0.6rem 1.8rem;
+        font-weight: 500;
+        transition: background 0.2s;
+    }
+    .btn-import:hover {
+        background-color: #2d325a;
+    }
+    .btn-import:disabled {
+        background-color: #94a3b8;
+        border-color: #94a3b8;
+    }
+    .ios-section-title {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #64748b;
+        margin-bottom: 1rem;
+        margin-top: 1.5rem;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 style="font-weight: 600;">Импорт застройщиков из таблицы</h1>
+    <a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill">← К списку</a>
+</div>
+
+<!-- Шаг 1: Загрузка файла -->
+<div class="import-card" id="step1">
+    <div class="upload-area" id="dropZone">
+        <div class="upload-icon">☁️</div>
+        <h5>Перетащите файл сюда</h5>
+        <p class="text-muted">или нажмите, чтобы выбрать</p>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden>
+        <small class="text-muted">Поддерживаются форматы .xlsx, .xls, .csv</small>
+    </div>
+    <div id="fileInfo" class="mt-2 text-center text-muted" style="display:none;"></div>
+</div>
+
+<!-- Шаг 2: Сопоставление полей и предпросмотр (скрыт изначально) -->
+<div id="step2" style="display:none;">
+    <div class="import-card">
+        <div class="ios-section-title">Сопоставление колонок</div>
+        <p class="text-muted small mb-3">Укажите, какая колонка вашей таблицы соответствует каждому полю в карточке застройщика.</p>
+        <form id="mappingForm">
+            <div class="row g-3">
+                {% set fields = [
+                    ('developer_name', 'Название застройщика *', 'Официальное наименование компании-застройщика'),
+                    ('complex_name', 'Название ЖК *', 'Наименование жилого комплекса'),
+                    ('city', 'Город', 'Город расположения ЖК'),
+                    ('region', 'Регион', 'Регион (Москва и МО, СПб и ЛО, Краснодарский край и т.д.)'),
+                    ('property_type', 'Тип недвижимости', 'Квартиры, апартаменты, таунхаусы и т.п.'),
+                    ('commission', 'Комиссия', 'Размер комиссии (только число)'),
+                    ('contact_person', 'Контактное лицо ЖК', 'Имя куратора по ЖК (если указано в таблице)'),
+                    ('contact_name', 'Имя контакта (общее)', 'Имя контактного лица застройщика'),
+                    ('contact_phone', 'Телефон контакта', 'Номер телефона'),
+                    ('contact_email', 'Email контакта', 'Адрес электронной почты')
+                ] %}
+                <div class="col-md-6">
+                    <label class="form-label">{{ fields[loop.index0][1] }}
+                        <span class="help-icon" data-bs-toggle="tooltip" title="{{ fields[loop.index0][2] }}">?</span>
+                    </label>
+                    <select class="form-select mapping-select" name="{{ fields[loop.index0][0] }}" id="map_{{ fields[loop.index0][0] }}">
+                        <option value="">— Не выбрано —</option>
+                    </select>
+                </div>
+                {% endfor %}
+            </div>
+        </form>
+
+        <div class="ios-section-title">Предпросмотр (первые 5 строк)</div>
+        <div class="table-preview table-responsive">
+            <table class="table table-sm table-bordered align-middle" id="previewTable">
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-end mt-4">
+            <button type="button" id="importBtn" class="btn btn-import" disabled>
+                Импортировать данные
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Шаг 3: Результат (скрыт) -->
+<div id="step3" style="display:none;">
+    <div class="import-card text-center">
+        <div style="font-size: 3rem; color: #16a34a;">✓</div>
+        <h4>Импорт успешно завершён</h4>
+        <p id="importResultText"></p>
+        <a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary mt-3 rounded-pill">Вернуться к списку</a>
+        <button class="btn btn-import mt-3 ms-2" onclick="location.reload()">Импортировать ещё</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+    // Активация tooltips
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    [...tooltipTriggerList].map(el => new bootstrap.Tooltip(el));
+
+    let workbookData = null;        // распарсенные данные
+    let columnHeaders = [];         // заголовки колонок
+    let allRows = [];               // все строки (массивы значений)
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const step1 = document.getElementById('step1');
+    const step2 = document.getElementById('step2');
+    const step3 = document.getElementById('step3');
+    const importBtn = document.getElementById('importBtn');
+    const mappingForm = document.getElementById('mappingForm');
+
+    // Обработчики drag&drop и клика
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', handleFileSelect);
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'));
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'));
+    });
+    dropZone.addEventListener('drop', (e) => {
+        const file = e.dataTransfer.files[0];
+        if (file) processFile(file);
+    });
+
+    function handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (file) processFile(file);
+    }
+
+    async function processFile(file) {
+        if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
+            alert('Пожалуйста, выберите файл Excel (.xlsx, .xls) или CSV.');
+            return;
+        }
+        fileInfo.style.display = 'block';
+        fileInfo.textContent = 'Обработка файла...';
+        try {
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheet];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+            if (jsonData.length === 0) {
+                alert('Файл пуст или не содержит данных.');
+                return;
+            }
+            columnHeaders = jsonData[0].map((h, i) => h || `Колонка ${i+1}`);
+            allRows = jsonData.slice(1).filter(row => row.some(cell => cell !== '')); // убираем полностью пустые строки
+            if (allRows.length === 0) {
+                alert('Нет данных для импорта.');
+                return;
+            }
+            workbookData = { headers: columnHeaders, rows: allRows };
+            populateMappingSelects();
+            renderPreview();
+            step1.style.display = 'none';
+            step2.style.display = 'block';
+            // Скролл к шагу 2
+            step2.scrollIntoView({ behavior: 'smooth' });
+        } catch (err) {
+            console.error(err);
+            alert('Ошибка чтения файла. Убедитесь, что формат корректен.');
+        }
+        fileInfo.style.display = 'none';
+    }
+
+    function populateMappingSelects() {
+        const selects = document.querySelectorAll('.mapping-select');
+        selects.forEach(select => {
+            select.innerHTML = '<option value="">— Не выбрано —</option>';
+            columnHeaders.forEach((header, idx) => {
+                const option = document.createElement('option');
+                option.value = idx;
+                option.textContent = header;
+                select.appendChild(option);
+            });
+        });
+        // Попытка авто-маппинга по названиям (необязательно, но удобно)
+        const autoMap = {
+            'developer_name': /застройщик|компания|developer/i,
+            'complex_name': /жк|жилой комплекс|название объекта|complex/i,
+            'city': /город|city/i,
+            'region': /регион|region/i,
+            'property_type': /тип|недвижимость|property/i,
+            'commission': /комиссия|commission/i,
+            'contact_person': /куратор|контакт жк/i,
+            'contact_name': /фио|имя|контактное лицо/i,
+            'contact_phone': /телефон|phone/i,
+            'contact_email': /email|почта/i,
+        };
+        for (let [field, regex] of Object.entries(autoMap)) {
+            const idx = columnHeaders.findIndex(h => regex.test(h));
+            if (idx !== -1) {
+                const sel = document.getElementById('map_' + field);
+                if (sel) sel.value = idx;
+            }
+        }
+        checkRequiredMapping();
+    }
+
+    function checkRequiredMapping() {
+        const devMap = document.getElementById('map_developer_name').value;
+        const compMap = document.getElementById('map_complex_name').value;
+        importBtn.disabled = (devMap === '' || compMap === '');
+    }
+
+    mappingForm.addEventListener('change', checkRequiredMapping);
+
+    function renderPreview() {
+        const thead = document.querySelector('#previewTable thead');
+        const tbody = document.querySelector('#previewTable tbody');
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+        // Заголовки
+        const trHead = document.createElement('tr');
+        columnHeaders.forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            trHead.appendChild(th);
+        });
+        thead.appendChild(trHead);
+        // Первые 5 строк
+        const previewRows = allRows.slice(0, 5);
+        previewRows.forEach(row => {
+            const tr = document.createElement('tr');
+            columnHeaders.forEach((_, idx) => {
+                const td = document.createElement('td');
+                td.textContent = idx < row.length ? row[idx] : '';
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+    }
+
+    importBtn.addEventListener('click', async () => {
+        // Собираем mapping
+        const mapping = {};
+        const selects = document.querySelectorAll('.mapping-select');
+        selects.forEach(select => {
+            const field = select.name;
+            const val = select.value;
+            mapping[field] = val !== '' ? parseInt(val) : null;
+        });
+
+        // Валидация обязательных полей
+        if (mapping.developer_name === null || mapping.complex_name === null) {
+            alert('Пожалуйста, сопоставьте обязательные поля: Название застройщика и Название ЖК.');
+            return;
+        }
+
+        importBtn.disabled = true;
+        importBtn.textContent = 'Импортируется...';
+
+        try {
+            const response = await fetch('/admin/import/execute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    rows: allRows,
+                    mapping: mapping
+                })
+            });
+            const result = await response.json();
+            if (response.ok && result.status === 'success') {
+                step2.style.display = 'none';
+                step3.style.display = 'block';
+                document.getElementById('importResultText').textContent =
+                    `Создано застройщиков: ${result.developers_created}, жилых комплексов: ${result.complexes_created}.`;
+            } else {
+                throw new Error(result.error || 'Неизвестная ошибка');
+            }
+        } catch (e) {
+            alert('Ошибка импорта: ' + e.message);
+            importBtn.disabled = false;
+            importBtn.textContent = 'Импортировать данные';
+        }
+    });
+</script>
+{% endblock %}
