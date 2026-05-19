@@ -1,5 +1,4 @@
 :root {
-
   /* BACKGROUNDS */
   --bg-primary: #F5F7FA;
   --bg-secondary: #FFFFFF;
@@ -26,20 +25,11 @@
   --border-secondary: rgba(17,24,39,0.04);
 
   /* SHADOWS */
-  --shadow-xs:
-    0px 1px 2px rgba(15,23,42,0.04);
-
-  --shadow-sm:
-    0px 4px 12px rgba(15,23,42,0.04);
-
-  --shadow-md:
-    0px 10px 30px rgba(15,23,42,0.06);
-
-  --shadow-lg:
-    0px 24px 60px rgba(15,23,42,0.08);
-
-  --shadow-glow:
-    0px 0px 40px rgba(110,139,255,0.12);
+  --shadow-xs: 0px 1px 2px rgba(15,23,42,0.04);
+  --shadow-sm: 0px 4px 12px rgba(15,23,42,0.04);
+  --shadow-md: 0px 10px 30px rgba(15,23,42,0.06);
+  --shadow-lg: 0px 24px 60px rgba(15,23,42,0.08);
+  --shadow-glow: 0px 0px 40px rgba(110,139,255,0.12);
 
   /* RADIUS */
   --radius-sm: 16px;
@@ -59,6 +49,5 @@
   --space-48: 48px;
 
   /* TYPOGRAPHY */
-  --font-primary: "SF Pro Display", "Inter", sans-serif;
-
+  --font-primary: "Inter", system-ui, -apple-system, sans-serif;
 }
