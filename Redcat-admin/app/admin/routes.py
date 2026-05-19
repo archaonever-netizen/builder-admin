@@ -1,5 +1,5 @@
 import json, os, uuid, threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import (render_template, request, jsonify, session, redirect, url_for, current_app)
 from app import db
 from app.admin import admin_bp
@@ -16,7 +16,22 @@ CONTACT_TYPES_RU = {
 @admin_bp.route('/')
 def index():
     developers = Developer.query.order_by(Developer.created_at.desc()).all()
-    return render_template('admin/index.html', developers=developers)
+    total_developers = len(developers)
+    ai_processing_count = Document.query.count()
+    feed_health = Developer.query.filter(
+        (Developer.chessboard_updated == None) |
+        (Developer.chessboard_updated < datetime.utcnow() - timedelta(days=30))
+    ).count()
+    regulations_pending = Regulation.query.filter(Regulation.status != 'Выполнено').count()
+    return render_template(
+        'admin/index.html',
+        developers=developers,
+        total_developers=total_developers,
+        ai_processing_count=ai_processing_count,
+        feed_health=feed_health,
+        regulations_pending=regulations_pending,
+        now=datetime.utcnow()
+    )
 
 @admin_bp.route('/add', methods=['GET', 'POST'])
 def add_developer():

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='ui/css/tokens.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='ui/css/foundations.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
     <nav id="navigation-rail" aria-label="Основная навигация">

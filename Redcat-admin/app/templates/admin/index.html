@@ -1,109 +1,162 @@
 {% extends "base.html" %}
-{% block title %}Главная{% endblock %}
-{% block content %}
-<style>
-    .select-checkbox {
-        width: 20px;
-        height: 20px;
-        accent-color: #1a1f36;
-        cursor: pointer;
-    }
-    .developer-card {
-        position: relative;
-    }
-    .developer-card .card-checkbox {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        z-index: 10;
-    }
-</style>
-<h1 class="mb-4">Контрагенты (застройщики)</h1>
-<div class="d-flex flex-wrap gap-2 mb-4">
-    <a href="{{ url_for('admin.add_developer') }}" class="btn btn-primary btn-lg">Добавить нового застройщика</a>
-    <a href="{{ url_for('admin.import_developers') }}" class="btn btn-outline-secondary btn-lg">📥 Импорт из таблицы</a>
-</div>
 
-{% if developers %}
-<div class="mb-3">
-    <button id="selectAllBtn" class="btn btn-outline-secondary btn-sm">Выделить все</button>
-    <button id="deleteSelectedBtn" class="btn btn-outline-danger btn-sm" disabled>Удалить выбранные</button>
-</div>
-<div class="row">
-    {% for dev in developers %}
-    <div class="col-md-4 mb-3">
-        <div class="card h-100 developer-card">
-            <input type="checkbox" class="form-check-input card-checkbox select-checkbox" value="{{ dev.id }}" data-dev-id="{{ dev.id }}">
-            <div class="card-body">
-                <a href="{{ url_for('admin.client_card', dev_id=dev.id) }}" class="text-decoration-none text-dark">
-                    <h5 class="card-title">{{ dev.name }}</h5>
-                </a>
-                <p class="card-text">Создан: {{ dev.created_at.strftime('%d.%m.%Y') }}</p>
-                <div class="btn-group">
-                    <a href="{{ url_for('admin.edit_developer', dev_id=dev.id) }}" class="btn btn-outline-warning btn-sm">✎</a>
-                    <form action="{{ url_for('admin.delete_developer', dev_id=dev.id) }}" method="POST" onsubmit="return confirm('Вы уверены, что хотите удалить {{ dev.name }}?')">
-                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑</button>
-                    </form>
-                </div>
-            </div>
+{% block title %}AI Operations Dashboard{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='ui/css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-shell">
+    <div class="dashboard-header">
+        <div>
+            <p class="dashboard-eyebrow">AI Operations</p>
+            <h1>Контрагенты (застройщики)</h1>
+        </div>
+        <div class="dashboard-actions">
+            <a href="{{ url_for('admin.add_developer') }}" class="dashboard-button primary">Добавить застройщика</a>
+            <a href="{{ url_for('admin.import_developers') }}" class="dashboard-button secondary">📥 Импорт из таблицы</a>
         </div>
     </div>
-    {% endfor %}
+
+    <div class="dashboard-commandbar">
+        <div class="dashboard-command-search">
+            <span aria-hidden="true">🔎</span>
+            <input type="search" id="adminSearchInput" placeholder="Поиск по застройщикам, ЖК, документам…" aria-label="Поиск по застройщикам">
+        </div>
+    </div>
+
+    <div class="overview-grid">
+        <article class="overview-card">
+            <div class="card-top">
+                <p class="card-label">Застройщики</p>
+                <span class="card-icon">🏗️</span>
+            </div>
+            <p class="card-value">{{ total_developers }}</p>
+            <p class="card-note">Всего зарегистрированных застройщиков в системе.</p>
+        </article>
+
+        <article class="overview-card">
+            <div class="card-top">
+                <p class="card-label">AI Обработка</p>
+                <span class="card-icon">🤖</span>
+            </div>
+            <p class="card-value">{{ ai_processing_count }}</p>
+            <p class="card-note">Документов и задач в текущей очереди обработки.</p>
+        </article>
+
+        <article class="overview-card">
+            <div class="card-top">
+                <p class="card-label">Здоровье фидов</p>
+                <span class="card-icon">📡</span>
+            </div>
+            <p class="card-value">{{ feed_health }}</p>
+            <p class="card-note">Застройщиков с устаревшей шахматкой (>30 дн.) или без обновлений.</p>
+        </article>
+
+        <article class="overview-card">
+            <div class="card-top">
+                <p class="card-label">Регламенты</p>
+                <span class="card-icon">📄</span>
+            </div>
+            <p class="card-value">{{ regulations_pending }}</p>
+            <p class="card-note">Регламентов со статусом, отличным от «Выполнено».</p>
+        </article>
+    </div>
+
+    <section class="stream-section">
+        <div class="section-title">
+            <div>
+                <h2>Интеллектуальный поток застройщиков</h2>
+                <p>Список застройщиков с AI-инсайтами, регионами и статусом шахматки.</p>
+            </div>
+            {% if developers|length %}
+            <span class="section-badge">{{ developers|length }} застройщиков</span>
+            {% endif %}
+        </div>
+
+        {% if developers %}
+        <div class="stream-list">
+            {% for dev in developers %}
+            {% set updated = dev.chessboard_updated %}
+            {% if updated %}
+                {% set days_ago = (now - updated).days %}
+            {% else %}
+                {% set days_ago = none %}
+            {% endif %}
+            {% if updated and days_ago <= 14 %}
+                {% set health_level = 'green' %}
+                {% set status_text = 'Всё в порядке' %}
+            {% elif updated and days_ago <= 30 %}
+                {% set health_level = 'yellow' %}
+                {% set status_text = 'Шахматка не обновлялась ' ~ days_ago ~ ' дней' %}
+            {% else %}
+                {% set health_level = 'red' %}
+                {% set status_text = 'Шахматка не обновлялась более 30 дней' %}
+            {% endif %}
+            <article class="stream-item" data-dev-id="{{ dev.id }}" data-dev-name="{{ dev.name }}" data-dev-created="{{ dev.created_at.strftime('%d.%m.%Y') if dev.created_at else '–' }}" data-dev-regions="{{ dev.complexes|map(attribute='region')|join(', ') }}" data-dev-complexes="{{ dev.complexes|map(attribute='name')|join(', ') }}" data-dev-commission="{{ dev.complexes|map(attribute='commission')|reject('equalto', None)|join(' / ') if dev.complexes else '—' }}" data-dev-contacts-count="{{ dev.contacts|length }}" data-dev-status-text="{{ status_text }}" data-health="{{ health_level }}">
+                <div class="stream-avatar">{{ dev.name[:1] }}</div>
+                <div class="stream-main">
+                    <h3 class="stream-title">{{ dev.name }}</h3>
+                    <p class="stream-subtitle">{{ dev.complexes|length }} ЖК · {{ dev.complexes|map(attribute='region')|join(', ') }}</p>
+                    <div class="stream-meta">
+                        <span><strong>{{ dev.complexes|length }}</strong> объектов</span>
+                        <span><strong>{{ dev.contacts|length }}</strong> контактов</span>
+                        <span><span class="health-dot {{ health_level }}"></span>{{ status_text }}</span>
+                    </div>
+                </div>
+                <div class="stream-insight">{{ status_text }}</div>
+                <div class="stream-actions">
+                    <a href="{{ url_for('admin.edit_developer', dev_id=dev.id) }}">✎ Редактировать</a>
+                    <form action="{{ url_for('admin.delete_developer', dev_id=dev.id) }}" method="POST" onsubmit="return confirm('Удалить {{ dev.name }}?');">
+                        <button type="submit">🗑 Удалить</button>
+                    </form>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">Нет ни одного застройщика. Добавьте первого, чтобы начать работу с AI Operations.</div>
+        {% endif %}
+    </section>
 </div>
-{% else %}
-<p>Нет ни одного застройщика. Добавьте первого!</p>
-{% endif %}
+
+<div id="side-panel-overlay" class="side-panel-overlay"></div>
+<aside id="side-panel" class="side-panel" aria-hidden="true">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">Название</h2>
+            <span class="panel-badge">Быстрый просмотр</span>
+        </div>
+        <button id="side-panel-close" class="panel-close" aria-label="Закрыть панель">×</button>
+    </div>
+    <p class="panel-copy">Здесь отображается краткий AI-просмотр застройщика и ссылки на полную карточку.</p>
+    <dl class="panel-meta">
+        <div>
+            <dt>Последнее обновление шахматки</dt>
+            <dd class="panel-status">—</dd>
+        </div>
+        <div>
+            <dt>Регионы</dt>
+            <dd class="panel-regions">—</dd>
+        </div>
+        <div>
+            <dt>Объекты</dt>
+            <dd class="panel-complexes">—</dd>
+        </div>
+        <div>
+            <dt>Контактов</dt>
+            <dd class="panel-contacts">—</dd>
+        </div>
+        <div>
+            <dt>Создан</dt>
+            <dd class="panel-created">—</dd>
+        </div>
+    </dl>
+    <a href="#" class="panel-full-link">Открыть полную карточку</a>
+</aside>
 {% endblock %}
 
 {% block scripts %}
-<script>
-    const checkboxes = document.querySelectorAll('.card-checkbox');
-    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-    const selectAllBtn = document.getElementById('selectAllBtn');
-
-    function updateDeleteButton() {
-        const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
-        deleteSelectedBtn.disabled = !anyChecked;
-    }
-
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', updateDeleteButton);
-    });
-
-    selectAllBtn.addEventListener('click', () => {
-        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-        checkboxes.forEach(cb => cb.checked = !allChecked);
-        updateDeleteButton();
-        selectAllBtn.textContent = allChecked ? 'Выделить все' : 'Снять выделение';
-    });
-
-    deleteSelectedBtn.addEventListener('click', async () => {
-        const selectedIds = Array.from(checkboxes)
-            .filter(cb => cb.checked)
-            .map(cb => cb.value);
-        if (selectedIds.length === 0) return;
-        if (!confirm(`Вы действительно хотите удалить ${selectedIds.length} застройщика(ов)? Это действие необратимо.`)) return;
-        
-        deleteSelectedBtn.disabled = true;
-        deleteSelectedBtn.textContent = 'Удаляю...';
-        try {
-            const resp = await fetch('/admin/delete_selected', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ids: selectedIds })
-            });
-            const result = await resp.json();
-            if (resp.ok && result.status === 'success') {
-                // Удаляем карточки из DOM или просто перезагружаем страницу
-                location.reload();
-            } else {
-                alert('Ошибка: ' + (result.error || 'неизвестно'));
-            }
-        } catch (e) {
-            alert('Ошибка сети');
-        }
-        deleteSelectedBtn.disabled = false;
-        deleteSelectedBtn.textContent = 'Удалить выбранные';
-    });
-</script>
+<script src="{{ url_for('static', filename='ui/js/dashboard.js') }}"></script>
 {% endblock %}
