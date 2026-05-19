@@ -56,7 +56,7 @@
   --blur-heavy: blur(40px);
 
   --motion-fast: 120ms;
-  --motion-medium: 220ms;
+  --motion-medium: 280ms;
   --motion-slow: 420ms;
 
   --transition-default: all var(--motion-medium) cubic-bezier(0.22, 0.8, 0.52, 1);

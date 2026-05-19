@@ -6,13 +6,14 @@ document.addEventListener('DOMContentLoaded', function () {
   var streamItems = Array.from(document.querySelectorAll('.stream-item'));
 
   function openPanel(developerData) {
-    panel.querySelector('.panel-title').textContent = developerData.name;
-    panel.querySelector('.panel-status').textContent = developerData.statusText;
-    panel.querySelector('.panel-complexes').textContent = developerData.complexes || 'Нет объектов';
-    panel.querySelector('.panel-regions').textContent = developerData.regions || 'Регион не задан';
-    panel.querySelector('.panel-contacts').textContent = developerData.contactsCount + ' контактов';
-    panel.querySelector('.panel-created').textContent = developerData.created;
-    panel.querySelector('.panel-full-link').setAttribute('href', '/admin/client/' + developerData.id);
+    document.getElementById('panel-title').textContent = developerData.name;
+    document.getElementById('panel-status').textContent = developerData.statusText;
+    document.getElementById('panel-complexes').textContent = developerData.complexes || 'Нет объектов';
+    document.getElementById('panel-regions').textContent = developerData.regions || 'Регион не задан';
+    document.getElementById('panel-contacts').textContent = developerData.contactsCount + ' контактов';
+    document.getElementById('panel-created').textContent = developerData.created;
+    document.getElementById('panel-full-link').setAttribute('href', '/admin/client/' + developerData.id);
+    document.getElementById('side-panel').setAttribute('aria-hidden', 'false');
 
     overlay.classList.add('open');
     panel.classList.add('open');
@@ -21,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function closePanel() {
     overlay.classList.remove('open');
     panel.classList.remove('open');
+    document.getElementById('side-panel').setAttribute('aria-hidden', 'true');
   }
 
   function parseDeveloperData(item) {
