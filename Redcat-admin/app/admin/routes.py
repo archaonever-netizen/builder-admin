@@ -370,3 +370,98 @@ def delete_developer(dev_id):
     db.session.delete(dev)
     db.session.commit()
     return redirect(url_for('admin.index'))
+
+# ========== ИМПОРТ ИЗ ТАБЛИЦЫ ==========
+@admin_bp.route('/import')
+def import_developers():
+    return render_template('admin/import_developers.html')
+
+@admin_bp.route('/import/execute', methods=['POST'])
+def import_execute():
+    data = request.get_json()
+    if not data or 'rows' not in data or 'mapping' not in data:
+        return jsonify({'error': 'Неверные данные запроса'}), 400
+
+    rows = data['rows']          # list of lists (строки таблицы)
+    mapping = data['mapping']    # dict: поле -> индекс колонки или None
+
+    # Обязательные поля
+    dev_name_col = mapping.get('developer_name')
+    complex_name_col = mapping.get('complex_name')
+    if dev_name_col is None or complex_name_col is None:
+        return jsonify({'error': 'Сопоставьте обязательные поля: Название застройщика и Название ЖК'}), 400
+
+    # Группируем строки по имени застройщика
+    developer_groups = {}
+    for row in rows:
+        if len(row) <= max(dev_name_col, complex_name_col):
+            continue
+        dev_name = str(row[dev_name_col]).strip()
+        complex_name = str(row[complex_name_col]).strip()
+        if not dev_name or not complex_name:
+            continue
+        if dev_name not in developer_groups:
+            developer_groups[dev_name] = []
+        developer_groups[dev_name].append(row)
+
+    created_devs = 0
+    created_complexes = 0
+    try:
+        for dev_name, row_list in developer_groups.items():
+            # Создаём застройщика
+            dev = Developer(name=dev_name)
+            db.session.add(dev)
+            db.session.flush()  # получаем dev.id
+            created_devs += 1
+
+            for row in row_list:
+                # Извлекаем данные по маппингу
+                def get_cell(col_idx):
+                    if col_idx is not None and col_idx < len(row):
+                        val = str(row[col_idx]).strip()
+                        return val if val else ''
+                    return ''
+
+                complex_name = get_cell(complex_name_col)
+                city = get_cell(mapping.get('city'))
+                region = get_cell(mapping.get('region'))
+                property_type = get_cell(mapping.get('property_type'))
+                commission = get_cell(mapping.get('commission'))
+                contact_person = get_cell(mapping.get('contact_person'))
+
+                rc = ResidentialComplex(
+                    name=complex_name,
+                    city=city,
+                    region=region,
+                    property_type=property_type,
+                    commission=commission,
+                    contact_person=contact_person,
+                    developer_id=dev.id
+                )
+                db.session.add(rc)
+                created_complexes += 1
+
+                # Контакт (если есть имя или телефон)
+                contact_name = get_cell(mapping.get('contact_name'))
+                contact_phone = get_cell(mapping.get('contact_phone'))
+                contact_email = get_cell(mapping.get('contact_email'))
+
+                if contact_name or contact_phone:
+                    c = Contact(
+                        contact_type='curator',  # по умолчанию – куратор
+                        name=contact_name,
+                        phone=contact_phone,
+                        email=contact_email,
+                        developer_id=dev.id
+                    )
+                    db.session.add(c)
+
+        db.session.commit()
+        return jsonify({
+            'status': 'success',
+            'developers_created': created_devs,
+            'complexes_created': created_complexes
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Ошибка при сохранении: {str(e)}'}), 500
