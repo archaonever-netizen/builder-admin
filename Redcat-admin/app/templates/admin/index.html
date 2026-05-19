@@ -1,14 +1,39 @@
 {% extends "base.html" %}
 {% block title %}Главная{% endblock %}
 {% block content %}
+<style>
+    .select-checkbox {
+        width: 20px;
+        height: 20px;
+        accent-color: #1a1f36;
+        cursor: pointer;
+    }
+    .developer-card {
+        position: relative;
+    }
+    .developer-card .card-checkbox {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 10;
+    }
+</style>
 <h1 class="mb-4">Контрагенты (застройщики)</h1>
-<a href="{{ url_for('admin.add_developer') }}" class="btn btn-primary btn-lg mb-4">Добавить нового застройщика</a>
-<a href="{{ url_for('admin.import_developers') }}" class="btn btn-outline-secondary btn-lg mb-4 ms-2">📥 Импорт из таблицы</a>
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{{ url_for('admin.add_developer') }}" class="btn btn-primary btn-lg">Добавить нового застройщика</a>
+    <a href="{{ url_for('admin.import_developers') }}" class="btn btn-outline-secondary btn-lg">📥 Импорт из таблицы</a>
+</div>
+
 {% if developers %}
+<div class="mb-3">
+    <button id="selectAllBtn" class="btn btn-outline-secondary btn-sm">Выделить все</button>
+    <button id="deleteSelectedBtn" class="btn btn-outline-danger btn-sm" disabled>Удалить выбранные</button>
+</div>
 <div class="row">
     {% for dev in developers %}
     <div class="col-md-4 mb-3">
-        <div class="card h-100">
+        <div class="card h-100 developer-card">
+            <input type="checkbox" class="form-check-input card-checkbox select-checkbox" value="{{ dev.id }}" data-dev-id="{{ dev.id }}">
             <div class="card-body">
                 <a href="{{ url_for('admin.client_card', dev_id=dev.id) }}" class="text-decoration-none text-dark">
                     <h5 class="card-title">{{ dev.name }}</h5>
@@ -28,4 +53,57 @@
 {% else %}
 <p>Нет ни одного застройщика. Добавьте первого!</p>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const checkboxes = document.querySelectorAll('.card-checkbox');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+
+    function updateDeleteButton() {
+        const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+        deleteSelectedBtn.disabled = !anyChecked;
+    }
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateDeleteButton);
+    });
+
+    selectAllBtn.addEventListener('click', () => {
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => cb.checked = !allChecked);
+        updateDeleteButton();
+        selectAllBtn.textContent = allChecked ? 'Выделить все' : 'Снять выделение';
+    });
+
+    deleteSelectedBtn.addEventListener('click', async () => {
+        const selectedIds = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        if (selectedIds.length === 0) return;
+        if (!confirm(`Вы действительно хотите удалить ${selectedIds.length} застройщика(ов)? Это действие необратимо.`)) return;
+        
+        deleteSelectedBtn.disabled = true;
+        deleteSelectedBtn.textContent = 'Удаляю...';
+        try {
+            const resp = await fetch('/admin/delete_selected', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedIds })
+            });
+            const result = await resp.json();
+            if (resp.ok && result.status === 'success') {
+                // Удаляем карточки из DOM или просто перезагружаем страницу
+                location.reload();
+            } else {
+                alert('Ошибка: ' + (result.error || 'неизвестно'));
+            }
+        } catch (e) {
+            alert('Ошибка сети');
+        }
+        deleteSelectedBtn.disabled = false;
+        deleteSelectedBtn.textContent = 'Удалить выбранные';
+    });
+</script>
 {% endblock %}
