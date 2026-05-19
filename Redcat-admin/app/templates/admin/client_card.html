@@ -349,10 +349,245 @@
     </div>
 </div>
 
-<!-- Модальные окна -->
-<!-- ... (без изменений) ... -->
+<!-- ================= МОДАЛЬНЫЕ ОКНА ================= -->
+<!-- Добавление ЖК -->
+<div class="modal fade" id="addComplexModal" tabindex="-1" aria-labelledby="addComplexModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('admin.add_complex', dev_id=developer.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить жилой комплекс</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Название ЖК</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Город</label>
+                        <input type="text" class="form-control" name="city">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Регион</label>
+                        <select class="form-select" name="region">
+                            <option value="">—</option>
+                            <option>Москва и МО</option>
+                            <option>Санкт-Петербург и ЛО</option>
+                            <option>Краснодарский край</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Тип недвижимости</label>
+                        <input type="text" class="form-control" name="property_type">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Комиссия (%)</label>
+                        <input type="text" class="form-control" name="commission">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Контактное лицо</label>
+                        <input type="text" class="form-control" name="contact_person">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-success">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Редактирование ЖК (для каждого свой modal) -->
+{% for rc in developer.complexes %}
+<div class="modal fade" id="editComplexModal{{ rc.id }}" tabindex="-1" aria-labelledby="editComplexLabel{{ rc.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('admin.edit_complex', complex_id=rc.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактировать ЖК</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Название ЖК</label>
+                        <input type="text" class="form-control" name="name" value="{{ rc.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Город</label>
+                        <input type="text" class="form-control" name="city" value="{{ rc.city or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Регион</label>
+                        <select class="form-select" name="region">
+                            <option value="">—</option>
+                            <option {% if rc.region == 'Москва и МО' %}selected{% endif %}>Москва и МО</option>
+                            <option {% if rc.region == 'Санкт-Петербург и ЛО' %}selected{% endif %}>Санкт-Петербург и ЛО</option>
+                            <option {% if rc.region == 'Краснодарский край' %}selected{% endif %}>Краснодарский край</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Тип недвижимости</label>
+                        <input type="text" class="form-control" name="property_type" value="{{ rc.property_type or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Комиссия (%)</label>
+                        <input type="text" class="form-control" name="commission" value="{{ rc.commission or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Контактное лицо</label>
+                        <input type="text" class="form-control" name="contact_person" value="{{ rc.contact_person or '' }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-success">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Добавление контакта -->
+<div class="modal fade" id="addContactModal" tabindex="-1" aria-labelledby="addContactModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('admin.add_contact', dev_id=developer.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить контакт</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Тип контакта</label>
+                        <select class="form-select" name="contact_type">
+                            <option value="curator">Куратор</option>
+                            <option value="rop">РОП</option>
+                            <option value="partner_head">Рук. партнёрского отдела</option>
+                            <option value="doc_flow">Документооборот</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Имя</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Телефон</label>
+                        <input type="text" class="form-control" name="phone">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-success">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Редактирование контакта (для каждого свой modal) -->
+{% for c in developer.contacts %}
+<div class="modal fade" id="editContactModal{{ c.id }}" tabindex="-1" aria-labelledby="editContactLabel{{ c.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('admin.edit_contact', contact_id=c.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактировать контакт</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Тип контакта</label>
+                        <select class="form-select" name="contact_type">
+                            <option value="curator" {% if c.contact_type == 'curator' %}selected{% endif %}>Куратор</option>
+                            <option value="rop" {% if c.contact_type == 'rop' %}selected{% endif %}>РОП</option>
+                            <option value="partner_head" {% if c.contact_type == 'partner_head' %}selected{% endif %}>Рук. партнёрского отдела</option>
+                            <option value="doc_flow" {% if c.contact_type == 'doc_flow' %}selected{% endif %}>Документооборот</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Имя</label>
+                        <input type="text" class="form-control" name="name" value="{{ c.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Телефон</label>
+                        <input type="text" class="form-control" name="phone" value="{{ c.phone or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" value="{{ c.email or '' }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-success">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
 {% endblock %}
 
 {% block scripts %}
-<!-- ... (скрипты без изменений) ... -->
+<script>
+    // Копирование фида
+    function copyToClipboard(elementId) {
+        const text = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Фид скопирован в буфер обмена');
+        });
+    }
+    // Логика авто-заполнения регламента (без изменений)
+    document.getElementById('start-auto-btn')?.addEventListener('click', async function() {
+        const resp = await fetch("{{ url_for('admin.start_regulation', dev_id=developer.id) }}", { method: 'POST' });
+        const data = await resp.json();
+        if (data.status === 'started') {
+            alert('Запущен анализ документов. Обновите страницу через минуту.');
+        } else {
+            alert('Ошибка: ' + (data.error || 'неизвестно'));
+        }
+    });
+    // Инлайн-редактирование регламента (без изменений)
+    document.querySelectorAll('.edit-field-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const row = this.closest('.field-row');
+            row.querySelector('.field-value').style.display = 'none';
+            this.style.display = 'none';
+            row.querySelector('.edit-field-group').style.display = 'block';
+        });
+    });
+    document.querySelectorAll('.cancel-field-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const row = this.closest('.field-row');
+            row.querySelector('.field-value').style.display = 'inline';
+            row.querySelector('.edit-field-btn').style.display = 'inline';
+            row.querySelector('.edit-field-group').style.display = 'none';
+        });
+    });
+    document.querySelectorAll('.save-field-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const row = this.closest('.field-row');
+            const key = row.dataset.key;
+            const value = row.querySelector('.field-input').value;
+            const resp = await fetch("{{ url_for('admin.update_regulation_field', dev_id=developer.id) }}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({key: key, value: value})
+            });
+            if (resp.ok) {
+                row.querySelector('.field-value').textContent = value || '—';
+                row.querySelector('.field-value').style.display = 'inline';
+                row.querySelector('.edit-field-btn').style.display = 'inline';
+                row.querySelector('.edit-field-group').style.display = 'none';
+            }
+        });
+    });
+</script>
 {% endblock %}
