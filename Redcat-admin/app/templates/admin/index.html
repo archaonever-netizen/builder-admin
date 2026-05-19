@@ -3,6 +3,7 @@
 {% block content %}
 <h1 class="mb-4">Контрагенты (застройщики)</h1>
 <a href="{{ url_for('admin.add_developer') }}" class="btn btn-primary btn-lg mb-4">Добавить нового застройщика</a>
+<a href="{{ url_for('admin.import_developers') }}" class="btn btn-outline-secondary btn-lg mb-4 ms-2">📥 Импорт из таблицы</a>
 {% if developers %}
 <div class="row">
     {% for dev in developers %}
