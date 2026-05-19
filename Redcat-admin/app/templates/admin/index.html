@@ -6,138 +6,144 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='ui/css/dashboard.css') }}">
 {% endblock %}
 
-{% block command_header %}{% endblock %}
 {% block content %}
 <div class="dashboard-layout">
-    <div class="dashboard-content">
-        <header id="command-header" class="command-header">
-            <div class="ai-search">
-                <span aria-hidden="true">🔎</span>
-                <input type="search" id="adminSearchInput" placeholder="Поиск по застройщикам, ЖК, документам…" aria-label="Поиск по застройщикам">
-            </div>
-            <div class="dashboard-actions">
-                <a href="{{ url_for('admin.add_developer') }}" class="quick-action">Добавить застройщика</a>
-                <a href="{{ url_for('admin.import_developers') }}" class="quick-action">📥 Импорт из таблицы</a>
-            </div>
-        </header>
+  <!-- Navigation rail уже в base.html, он будет стилизован автоматически -->
 
-        <div>
-            <h1 class="page-title">Контрагенты (застройщики)</h1>
-            <p class="page-subtitle">AI Operations Dashboard</p>
-        </div>
-
-        <div class="overview-grid">
-            <article class="primary-ai-card">
-                <p class="metric-label">AI Operations</p>
-                <p class="metric-value">{{ ai_processing_count }}</p>
-                <p class="text-body">Автоматизированный анализ и состояние AI-процессов.</p>
-            </article>
-
-            <article class="metric-card">
-                <p class="metric-label">Застройщики</p>
-                <p class="metric-value">{{ total_developers }}</p>
-            </article>
-
-            <article class="metric-card">
-                <p class="metric-label">Здоровье фидов</p>
-                <p class="metric-value">{{ feed_health }}</p>
-            </article>
-
-            <article class="metric-card">
-                <p class="metric-label">Регламенты</p>
-                <p class="metric-value">{{ regulations_pending }}</p>
-            </article>
-        </div>
-
-        <div class="developer-stream">
-            {% if developers %}
-                {% for dev in developers %}
-                    {% set updated = dev.chessboard_updated %}
-                    {% if updated %}
-                        {% set days_ago = (now - updated).days %}
-                    {% else %}
-                        {% set days_ago = none %}
-                    {% endif %}
-                    {% if updated and days_ago <= 14 %}
-                        {% set health_level = 'green' %}
-                        {% set status_text = 'Всё в порядке' %}
-                        {% set status_class = 'success' %}
-                    {% elif updated and days_ago <= 30 %}
-                        {% set health_level = 'yellow' %}
-                        {% set status_text = 'Шахматка не обновлялась ' ~ days_ago ~ ' дней' %}
-                        {% set status_class = 'warning' %}
-                    {% else %}
-                        {% set health_level = 'red' %}
-                        {% set status_text = 'Шахматка не обновлялась более 30 дней' %}
-                        {% set status_class = 'danger' %}
-                    {% endif %}
-                    <article class="developer-card" data-dev-id="{{ dev.id }}" data-dev-name="{{ dev.name }}" data-dev-created="{{ dev.created_at.strftime('%d.%m.%Y') if dev.created_at else '–' }}" data-dev-regions="{{ dev.complexes|map(attribute='region')|unique|list|join(', ') }}" data-dev-complexes="{{ dev.complexes|map(attribute='name')|join(', ') }}" data-dev-commission="{{ dev.complexes|map(attribute='commission')|reject('equalto', None)|join(' / ') if dev.complexes else '—' }}" data-dev-contacts-count="{{ dev.contacts|length }}" data-dev-status-text="{{ status_text }}" data-health="{{ health_level }}">
-                        <div class="developer-info">
-                            <div class="developer-logo">{{ dev.name[:1] }}</div>
-                            <div>
-                                <div class="developer-name">{{ dev.name }}</div>
-                                <div class="developer-meta">{{ dev.complexes|length }} ЖК · {{ dev.complexes|map(attribute='region')|unique|list|join(', ') }}</div>
-                            </div>
-                        </div>
-                        <div>
-                            <span class="status-tag {{ status_class }}">{{ status_text }}</span>
-                        </div>
-                        <div class="ai-insight {{ status_class }}">
-                            <p class="ai-insight-title">AI-инсайт</p>
-                            <p class="ai-insight-text">{{ status_text }}</p>
-                        </div>
-                        <div>
-                            <div class="developer-meta">Объектов: {{ dev.complexes|length }}</div>
-                            <div class="developer-meta">Контактов: {{ dev.contacts|length }}</div>
-                        </div>
-                        <div class="developer-actions">
-                            <a href="{{ url_for('admin.edit_developer', dev_id=dev.id) }}" class="quick-action">✎ Редактировать</a>
-                            <form action="{{ url_for('admin.delete_developer', dev_id=dev.id) }}" method="POST" onsubmit="return confirm('Удалить {{ dev.name }}?');">
-                                <button type="submit" class="quick-action">🗑 Удалить</button>
-                            </form>
-                        </div>
-                    </article>
-                {% endfor %}
-            {% else %}
-                <div class="empty-state">Нет ни одного застройщика. Добавьте первого, чтобы начать работу с AI Operations.</div>
-            {% endif %}
-        </div>
+  <div class="dashboard-content">
+    <div class="command-header">
+      <div class="ai-search">
+        <span>🔍</span>
+        <input type="search" id="adminSearchInput" placeholder="Найти застройщика, ЖК, договор…" aria-label="Поиск">
+      </div>
+      <a href="{{ url_for('admin.add_developer') }}" class="quick-action">➕ Добавить</a>
+      <a href="{{ url_for('admin.import_developers') }}" class="quick-action">📥 Импорт</a>
     </div>
 
-    <aside id="side-panel" class="side-panel sidebar-panel" aria-hidden="true">
-        <div class="panel-header">
-            <div>
-                <h2 id="panel-title" class="sidebar-panel-title">Название</h2>
-                <span class="panel-badge">Быстрый просмотр</span>
+    <h1 class="page-title">Контрагенты (застройщики)</h1>
+    <p class="page-subtitle">AI Operations Dashboard · {{ total_developers }} застройщиков</p>
+
+    <div class="overview-grid">
+      <div class="primary-ai-card">
+        <span style="font-size: 40px;">🤖</span>
+        <div style="margin-top: 12px; font-weight: 600; font-size: 18px;">AI Ассистент</div>
+        <div style="font-size: 14px; color: #5B6475;">Анализ {{ ai_processing_count }} документов</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Застройщики</span>
+        <span class="metric-value">{{ total_developers }}</span>
+        <span class="metric-label">в системе</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">AI Обработка</span>
+        <span class="metric-value">{{ ai_processing_count }}</span>
+        <span class="metric-label">документов</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Здоровье фидов</span>
+        <span class="metric-value">{{ feed_health }}</span>
+        <span class="metric-label">требуют обновления</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Регламенты</span>
+        <span class="metric-value">{{ regulations_pending }}</span>
+        <span class="metric-label">не выполнены</span>
+      </div>
+    </div>
+
+    <div class="developer-stream">
+      {% if developers %}
+        {% for dev in developers %}
+          {% set updated = dev.chessboard_updated %}
+          {% if updated %}
+            {% set days_ago = (now - updated).days %}
+          {% else %}
+            {% set days_ago = none %}
+          {% endif %}
+          {% if updated and days_ago <= 14 %}
+            {% set health_level = 'success' %}
+            {% set status_text = 'Шахматка актуальна' %}
+            {% set ai_text = 'Обновлено ' ~ days_ago ~ ' дн. назад' %}
+          {% elif updated and days_ago <= 30 %}
+            {% set health_level = 'warning' %}
+            {% set status_text = 'Устаревает' %}
+            {% set ai_text = 'Не обновлялась ' ~ days_ago ~ ' дн.' %}
+          {% else %}
+            {% set health_level = 'danger' %}
+            {% set status_text = 'Критично' %}
+            {% set ai_text = 'Шахматка устарела' %}
+          {% endif %}
+
+          <div class="developer-card" data-dev-id="{{ dev.id }}" data-dev-name="{{ dev.name }}" data-dev-regions="{{ dev.complexes|map(attribute='region')|unique|list|join(', ') }}" data-dev-complexes="{{ dev.complexes|map(attribute='name')|join(', ') }}" data-dev-contacts-count="{{ dev.contacts|length }}" data-dev-status-text="{{ status_text }}" data-dev-created="{{ dev.created_at.strftime('%d.%m.%Y') if dev.created_at else '–' }}">
+            <div class="developer-info">
+              <div class="developer-logo">{{ dev.name[:1] }}</div>
+              <div>
+                <div class="developer-name">{{ dev.name }}</div>
+                <div class="developer-meta">
+                  <span>{{ dev.complexes|length }} ЖК</span>
+                  <span>{{ dev.complexes|map(attribute='region')|unique|list|join(', ') }}</span>
+                </div>
+              </div>
             </div>
-            <button id="side-panel-close" class="panel-close" aria-label="Закрыть панель">×</button>
-        </div>
-        <p class="panel-copy">Здесь отображается краткий AI-просмотр застройщика и ссылки на полную карточку.</p>
-        <dl class="panel-meta">
-            <div>
-                <dt>Последнее обновление шахматки</dt>
-                <dd id="panel-status" class="panel-status">—</dd>
+
+            <span class="status-tag {{ health_level }}">{{ status_text }}</span>
+
+            <div class="ai-insight {{ health_level }}">
+              <div class="ai-insight-title">{{ status_text }}</div>
+              <div class="ai-insight-text">{{ ai_text }}</div>
             </div>
-            <div>
-                <dt>Регионы</dt>
-                <dd id="panel-regions" class="panel-regions">—</dd>
+
+            <div style="display: flex; gap: 12px;">
+              <a href="{{ url_for('admin.edit_developer', dev_id=dev.id) }}" class="quick-action">✎</a>
+              <form action="{{ url_for('admin.delete_developer', dev_id=dev.id) }}" method="POST" onsubmit="return confirm('Удалить {{ dev.name }}?');" style="display: inline;">
+                <button type="submit" class="quick-action" style="background: rgba(255,94,94,0.12); border-color: transparent;">🗑</button>
+              </form>
             </div>
-            <div>
-                <dt>Объекты</dt>
-                <dd id="panel-complexes" class="panel-complexes">—</dd>
-            </div>
-            <div>
-                <dt>Контактов</dt>
-                <dd id="panel-contacts" class="panel-contacts">—</dd>
-            </div>
-            <div>
-                <dt>Создан</dt>
-                <dd id="panel-created" class="panel-created">—</dd>
-            </div>
-        </dl>
-        <a id="panel-full-link" href="#" class="panel-full-link">Открыть полную карточку</a>
-    </aside>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">Нет застройщиков. Добавьте первого.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="right-sidebar">
+    <div class="sidebar-panel">
+      <h2 class="sidebar-panel-title">Быстрый просмотр</h2>
+      <p style="color: #5B6475; margin-top: 8px;">Выберите застройщика, чтобы увидеть детали.</p>
+    </div>
+  </div>
 </div>
+
+<!-- Боковая панель (скрытая) -->
+<div id="side-panel-overlay" class="side-panel-overlay"></div>
+<aside id="side-panel" class="side-panel">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2 class="sidebar-panel-title" id="panel-title">Название</h2>
+    <button id="side-panel-close" style="background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
+  </div>
+  <div style="margin-top: 20px;">
+    <div class="metric-label">Шахматка</div>
+    <div id="panel-status" style="margin-top: 4px;">—</div>
+  </div>
+  <div style="margin-top: 16px;">
+    <div class="metric-label">Регионы</div>
+    <div id="panel-regions">—</div>
+  </div>
+  <div style="margin-top: 16px;">
+    <div class="metric-label">Объекты</div>
+    <div id="panel-complexes">—</div>
+  </div>
+  <div style="margin-top: 16px;">
+    <div class="metric-label">Контактов</div>
+    <div id="panel-contacts">—</div>
+  </div>
+  <div style="margin-top: 16px;">
+    <div class="metric-label">Создан</div>
+    <div id="panel-created">—</div>
+  </div>
+  <a href="#" id="panel-full-link" class="quick-action" style="margin-top: 24px; width: 100%;">Открыть карточку</a>
+</aside>
 {% endblock %}
 
 {% block scripts %}
