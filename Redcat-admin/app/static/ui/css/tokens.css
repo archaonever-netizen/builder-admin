@@ -1,0 +1,63 @@
+:root {
+  --font-primary: 'SF Pro Display', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', monospace;
+
+  --text-h1: 48px;
+  --text-h2: 32px;
+  --text-section: 22px;
+  --text-body: 15px;
+  --text-meta: 13px;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  --leading-tight: 1.05;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.6;
+
+  --bg-primary: #F5F7FA;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary: #EEF2F6;
+
+  --text-primary: #111827;
+  --text-secondary: #5B6475;
+  --text-muted: #98A2B3;
+
+  --accent-primary: #6E8BFF;
+  --accent-secondary: #8BA8FF;
+
+  --success: #30C48D;
+  --warning: #FFB547;
+  --danger: #FF5E5E;
+
+  --space-2: 4px;
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --elevation-2: 0 4px 8px rgba(0, 0, 0, 0.06);
+  --elevation-3: 0 8px 16px rgba(0, 0, 0, 0.08);
+  --elevation-overlay: 0 16px 32px rgba(0, 0, 0, 0.12);
+
+  --blur-light: blur(12px);
+  --blur-medium: blur(24px);
+  --blur-heavy: blur(40px);
+
+  --motion-fast: 120ms;
+  --motion-medium: 220ms;
+  --motion-slow: 420ms;
+
+  --transition-default: all var(--motion-medium) cubic-bezier(0.22, 0.8, 0.52, 1);
+}
