@@ -382,16 +382,15 @@ def import_execute():
     if not data or 'rows' not in data or 'mapping' not in data:
         return jsonify({'error': 'Неверные данные запроса'}), 400
 
-    rows = data['rows']          # list of lists (строки таблицы)
-    mapping = data['mapping']    # dict: поле -> индекс колонки или None
+    rows = data['rows']
+    mapping = data['mapping']
 
-    # Обязательные поля
     dev_name_col = mapping.get('developer_name')
     complex_name_col = mapping.get('complex_name')
     if dev_name_col is None or complex_name_col is None:
-        return jsonify({'error': 'Сопоставьте обязательные поля: Название застройщика и Название ЖК'}), 400
+        return jsonify({'error': 'Сопоставьте обязательные поля'}), 400
 
-    # Группируем строки по имени застройщика
+    # Группировка по застройщику
     developer_groups = {}
     for row in rows:
         if len(row) <= max(dev_name_col, complex_name_col):
@@ -408,14 +407,12 @@ def import_execute():
     created_complexes = 0
     try:
         for dev_name, row_list in developer_groups.items():
-            # Создаём застройщика
             dev = Developer(name=dev_name)
             db.session.add(dev)
-            db.session.flush()  # получаем dev.id
+            db.session.flush()
             created_devs += 1
 
             for row in row_list:
-                # Извлекаем данные по маппингу
                 def get_cell(col_idx):
                     if col_idx is not None and col_idx < len(row):
                         val = str(row[col_idx]).strip()
@@ -441,14 +438,13 @@ def import_execute():
                 db.session.add(rc)
                 created_complexes += 1
 
-                # Контакт (если есть имя или телефон)
                 contact_name = get_cell(mapping.get('contact_name'))
                 contact_phone = get_cell(mapping.get('contact_phone'))
                 contact_email = get_cell(mapping.get('contact_email'))
 
                 if contact_name or contact_phone:
                     c = Contact(
-                        contact_type='curator',  # по умолчанию – куратор
+                        contact_type='curator',
                         name=contact_name,
                         phone=contact_phone,
                         email=contact_email,
