@@ -8,21 +8,23 @@
 
 {% block content %}
 <div class="dashboard-shell">
-    <div class="dashboard-header">
-        <div>
-            <p class="dashboard-eyebrow">AI Operations</p>
-            <h1>Контрагенты (застройщики)</h1>
+    <div class="dashboard-hero">
+        <div class="dashboard-header">
+            <div>
+                <p class="dashboard-eyebrow">AI Operations</p>
+                <h1>Контрагенты (застройщики)</h1>
+            </div>
+            <div class="dashboard-actions">
+                <a href="{{ url_for('admin.add_developer') }}" class="dashboard-button primary">Добавить застройщика</a>
+                <a href="{{ url_for('admin.import_developers') }}" class="dashboard-button secondary">📥 Импорт из таблицы</a>
+            </div>
         </div>
-        <div class="dashboard-actions">
-            <a href="{{ url_for('admin.add_developer') }}" class="dashboard-button primary">Добавить застройщика</a>
-            <a href="{{ url_for('admin.import_developers') }}" class="dashboard-button secondary">📥 Импорт из таблицы</a>
-        </div>
-    </div>
 
-    <div class="dashboard-commandbar">
-        <div class="dashboard-command-search">
-            <span aria-hidden="true">🔎</span>
-            <input type="search" id="adminSearchInput" placeholder="Поиск по застройщикам, ЖК, документам…" aria-label="Поиск по застройщикам">
+        <div class="dashboard-commandbar">
+            <div class="dashboard-command-search">
+                <span aria-hidden="true">🔎</span>
+                <input type="search" id="adminSearchInput" placeholder="Поиск по застройщикам, ЖК, документам…" aria-label="Поиск по застройщикам">
+            </div>
         </div>
     </div>
 
@@ -94,16 +96,16 @@
                 {% set health_level = 'red' %}
                 {% set status_text = 'Шахматка не обновлялась более 30 дней' %}
             {% endif %}
-            <article class="stream-item" data-dev-id="{{ dev.id }}" data-dev-name="{{ dev.name }}" data-dev-created="{{ dev.created_at.strftime('%d.%m.%Y') if dev.created_at else '–' }}" data-dev-regions="{{ dev.complexes|map(attribute='region')|join(', ') }}" data-dev-complexes="{{ dev.complexes|map(attribute='name')|join(', ') }}" data-dev-commission="{{ dev.complexes|map(attribute='commission')|reject('equalto', None)|join(' / ') if dev.complexes else '—' }}" data-dev-contacts-count="{{ dev.contacts|length }}" data-dev-status-text="{{ status_text }}" data-health="{{ health_level }}">
+            <article class="stream-item" data-dev-id="{{ dev.id }}" data-dev-name="{{ dev.name }}" data-dev-created="{{ dev.created_at.strftime('%d.%m.%Y') if dev.created_at else '–' }}" data-dev-regions="{{ dev.complexes|map(attribute='region')|unique|list|join(', ') }}" data-dev-complexes="{{ dev.complexes|map(attribute='name')|join(', ') }}" data-dev-commission="{{ dev.complexes|map(attribute='commission')|reject('equalto', None)|join(' / ') if dev.complexes else '—' }}" data-dev-contacts-count="{{ dev.contacts|length }}" data-dev-status-text="{{ status_text }}" data-health="{{ health_level }}">
                 <div class="stream-avatar">{{ dev.name[:1] }}</div>
                 <div class="stream-main">
                     <h3 class="stream-title">{{ dev.name }}</h3>
-                    <p class="stream-subtitle">{{ dev.complexes|length }} ЖК · {{ dev.complexes|map(attribute='region')|join(', ') }}</p>
+                    <p class="stream-subtitle">{{ dev.complexes|length }} ЖК · {{ dev.complexes|map(attribute='region')|unique|list|join(', ') }}</p>
                     <div class="stream-meta">
                         <span><strong>{{ dev.complexes|length }}</strong> объектов</span>
                         <span><strong>{{ dev.contacts|length }}</strong> контактов</span>
-                        <span><span class="health-dot {{ health_level }}"></span>{{ status_text }}</span>
                     </div>
+                    <span class="health-chip {{ health_level }}">{{ status_text }}</span>
                 </div>
                 <div class="stream-insight">{{ status_text }}</div>
                 <div class="stream-actions">
