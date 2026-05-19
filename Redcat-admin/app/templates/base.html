@@ -11,20 +11,21 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <nav id="navigation-rail" aria-label="Основная навигация">
+    <nav id="navigation-rail" class="navigation-rail" aria-label="Основная навигация">
         <ul class="rail-list">
-            <li class="rail-item"><a href="/admin/" class="rail-link">Dashboard</a></li>
-            <li class="rail-item"><a href="/admin/" class="rail-link">Developers</a></li>
-            <li class="rail-item"><a href="/manager/" class="rail-link">Agents</a></li>
-            <li class="rail-item"><a href="#" class="rail-link">AI Center</a></li>
-            <li class="rail-item"><a href="#" class="rail-link">Documents</a></li>
-            <li class="rail-item"><a href="#" class="rail-link">Analytics</a></li>
-            <li class="rail-item"><a href="#" class="rail-link">Settings</a></li>
+            <li class="rail-item"><a href="/admin/" class="nav-item">Dashboard</a></li>
+            <li class="rail-item"><a href="/admin/" class="nav-item">Developers</a></li>
+            <li class="rail-item"><a href="/manager/" class="nav-item">Agents</a></li>
+            <li class="rail-item"><a href="#" class="nav-item">AI Center</a></li>
+            <li class="rail-item"><a href="#" class="nav-item">Documents</a></li>
+            <li class="rail-item"><a href="#" class="nav-item">Analytics</a></li>
+            <li class="rail-item"><a href="#" class="nav-item">Settings</a></li>
         </ul>
     </nav>
 
     <div id="workspace">
-        <header id="command-header">
+        {% block command_header %}
+        <header id="command-header" class="command-header">
             <div class="command-search">
                 <span aria-hidden="true">🔎</span>
                 <input type="search" placeholder="Найти застройщика, ЖК, договор…" aria-label="Поиск">
@@ -34,6 +35,7 @@
                 <button type="button" class="icon-button" aria-label="Профиль">👤</button>
             </div>
         </header>
+        {% endblock %}
 
         <main id="main-content" class="legacy-bootstrap">
             {% block content %}{% endblock %}

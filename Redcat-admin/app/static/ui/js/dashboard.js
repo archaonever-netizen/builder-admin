@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var panel = document.getElementById('side-panel');
   var closeButton = document.getElementById('side-panel-close');
   var searchInput = document.getElementById('adminSearchInput');
-  var streamItems = Array.from(document.querySelectorAll('.stream-item'));
+  var streamItems = Array.from(document.querySelectorAll('.developer-card'));
 
   function openPanel(developerData) {
     document.getElementById('panel-title').textContent = developerData.name;
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   streamItems.forEach(function (item) {
     item.addEventListener('click', function (event) {
-      if (event.target.closest('.stream-actions')) {
+      if (event.target.closest('.developer-actions')) {
         return;
       }
       openPanel(parseDeveloperData(item));
@@ -54,8 +54,8 @@ document.addEventListener('DOMContentLoaded', function () {
     searchInput.addEventListener('input', function () {
       var filter = searchInput.value.trim().toLowerCase();
       streamItems.forEach(function (item) {
-        var title = item.querySelector('.stream-title').textContent.toLowerCase();
-        var regions = item.querySelector('.stream-subtitle').textContent.toLowerCase();
+        var title = item.querySelector('.developer-name').textContent.toLowerCase();
+        var regions = (item.dataset.devRegions || '').toLowerCase();
         var matches = title.includes(filter) || regions.includes(filter);
         item.style.display = matches ? '' : 'none';
       });

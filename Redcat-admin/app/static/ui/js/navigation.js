@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-  var railLinks = document.querySelectorAll('#navigation-rail .rail-link');
+  var railLinks = document.querySelectorAll('#navigation-rail .nav-item');
   if (!railLinks.length) {
     return;
   }

@@ -6,157 +6,138 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='ui/css/dashboard.css') }}">
 {% endblock %}
 
+{% block command_header %}{% endblock %}
 {% block content %}
-<div class="dashboard-shell">
-    <div class="dashboard-hero">
-        <div class="dashboard-header">
-            <div>
-                <p class="dashboard-eyebrow">AI Operations</p>
-                <h1>Контрагенты (застройщики)</h1>
-            </div>
-            <div class="dashboard-actions">
-                <a href="{{ url_for('admin.add_developer') }}" class="dashboard-button primary">Добавить застройщика</a>
-                <a href="{{ url_for('admin.import_developers') }}" class="dashboard-button secondary">📥 Импорт из таблицы</a>
-            </div>
-        </div>
-
-        <div class="dashboard-commandbar">
-            <div class="dashboard-command-search">
+<div class="dashboard-layout">
+    <div class="dashboard-content">
+        <header id="command-header" class="command-header">
+            <div class="ai-search">
                 <span aria-hidden="true">🔎</span>
                 <input type="search" id="adminSearchInput" placeholder="Поиск по застройщикам, ЖК, документам…" aria-label="Поиск по застройщикам">
             </div>
-        </div>
-    </div>
-
-    <div class="overview-grid">
-        <article class="overview-card">
-            <div class="card-top">
-                <p class="card-label">Застройщики</p>
-                <span class="card-icon">🏗️</span>
+            <div class="dashboard-actions">
+                <a href="{{ url_for('admin.add_developer') }}" class="quick-action">Добавить застройщика</a>
+                <a href="{{ url_for('admin.import_developers') }}" class="quick-action">📥 Импорт из таблицы</a>
             </div>
-            <p class="card-value">{{ total_developers }}</p>
-            <p class="card-note">Всего зарегистрированных застройщиков в системе.</p>
-        </article>
+        </header>
 
-        <article class="overview-card">
-            <div class="card-top">
-                <p class="card-label">AI Обработка</p>
-                <span class="card-icon">🤖</span>
-            </div>
-            <p class="card-value">{{ ai_processing_count }}</p>
-            <p class="card-note">Документов и задач в текущей очереди обработки.</p>
-        </article>
-
-        <article class="overview-card">
-            <div class="card-top">
-                <p class="card-label">Здоровье фидов</p>
-                <span class="card-icon">📡</span>
-            </div>
-            <p class="card-value">{{ feed_health }}</p>
-            <p class="card-note">Застройщиков с устаревшей шахматкой (>30 дн.) или без обновлений.</p>
-        </article>
-
-        <article class="overview-card">
-            <div class="card-top">
-                <p class="card-label">Регламенты</p>
-                <span class="card-icon">📄</span>
-            </div>
-            <p class="card-value">{{ regulations_pending }}</p>
-            <p class="card-note">Регламентов со статусом, отличным от «Выполнено».</p>
-        </article>
-    </div>
-
-    <section class="stream-section">
-        <div class="section-title">
-            <div>
-                <h2>Интеллектуальный поток застройщиков</h2>
-                <p>Список застройщиков с AI-инсайтами, регионами и статусом шахматки.</p>
-            </div>
-            {% if developers|length %}
-            <span class="section-badge">{{ developers|length }} застройщиков</span>
-            {% endif %}
+        <div>
+            <h1 class="page-title">Контрагенты (застройщики)</h1>
+            <p class="page-subtitle">AI Operations Dashboard</p>
         </div>
 
-        {% if developers %}
-        <div class="stream-list">
-            {% for dev in developers %}
-            {% set updated = dev.chessboard_updated %}
-            {% if updated %}
-                {% set days_ago = (now - updated).days %}
-            {% else %}
-                {% set days_ago = none %}
-            {% endif %}
-            {% if updated and days_ago <= 14 %}
-                {% set health_level = 'green' %}
-                {% set status_text = 'Всё в порядке' %}
-            {% elif updated and days_ago <= 30 %}
-                {% set health_level = 'yellow' %}
-                {% set status_text = 'Шахматка не обновлялась ' ~ days_ago ~ ' дней' %}
-            {% else %}
-                {% set health_level = 'red' %}
-                {% set status_text = 'Шахматка не обновлялась более 30 дней' %}
-            {% endif %}
-            <article class="stream-item" data-dev-id="{{ dev.id }}" data-dev-name="{{ dev.name }}" data-dev-created="{{ dev.created_at.strftime('%d.%m.%Y') if dev.created_at else '–' }}" data-dev-regions="{{ dev.complexes|map(attribute='region')|unique|list|join(', ') }}" data-dev-complexes="{{ dev.complexes|map(attribute='name')|join(', ') }}" data-dev-commission="{{ dev.complexes|map(attribute='commission')|reject('equalto', None)|join(' / ') if dev.complexes else '—' }}" data-dev-contacts-count="{{ dev.contacts|length }}" data-dev-status-text="{{ status_text }}" data-health="{{ health_level }}">
-                <div class="stream-avatar">{{ dev.name[:1] }}</div>
-                <div class="stream-main">
-                    <h3 class="stream-title">{{ dev.name }}</h3>
-                    <p class="stream-subtitle">{{ dev.complexes|length }} ЖК · {{ dev.complexes|map(attribute='region')|unique|list|join(', ') }}</p>
-                    <div class="stream-meta">
-                        <span><strong>{{ dev.complexes|length }}</strong> объектов</span>
-                        <span><strong>{{ dev.contacts|length }}</strong> контактов</span>
-                    </div>
-                    <span class="health-chip {{ health_level }}">{{ status_text }}</span>
-                </div>
-                <div class="stream-insight">{{ status_text }}</div>
-                <div class="stream-actions">
-                    <a href="{{ url_for('admin.edit_developer', dev_id=dev.id) }}">✎ Редактировать</a>
-                    <form action="{{ url_for('admin.delete_developer', dev_id=dev.id) }}" method="POST" onsubmit="return confirm('Удалить {{ dev.name }}?');">
-                        <button type="submit">🗑 Удалить</button>
-                    </form>
-                </div>
+        <div class="overview-grid">
+            <article class="primary-ai-card">
+                <p class="metric-label">AI Operations</p>
+                <p class="metric-value">{{ ai_processing_count }}</p>
+                <p class="text-body">Автоматизированный анализ и состояние AI-процессов.</p>
             </article>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-state">Нет ни одного застройщика. Добавьте первого, чтобы начать работу с AI Operations.</div>
-        {% endif %}
-    </section>
-</div>
 
-<div id="side-panel-overlay" class="side-panel-overlay"></div>
-<aside id="side-panel" class="side-panel" aria-hidden="true">
-    <div class="panel-header">
-        <div>
-            <h2 id="panel-title" class="panel-title">Название</h2>
-            <span class="panel-badge">Быстрый просмотр</span>
+            <article class="metric-card">
+                <p class="metric-label">Застройщики</p>
+                <p class="metric-value">{{ total_developers }}</p>
+            </article>
+
+            <article class="metric-card">
+                <p class="metric-label">Здоровье фидов</p>
+                <p class="metric-value">{{ feed_health }}</p>
+            </article>
+
+            <article class="metric-card">
+                <p class="metric-label">Регламенты</p>
+                <p class="metric-value">{{ regulations_pending }}</p>
+            </article>
         </div>
-        <button id="side-panel-close" class="panel-close" aria-label="Закрыть панель">×</button>
+
+        <div class="developer-stream">
+            {% if developers %}
+                {% for dev in developers %}
+                    {% set updated = dev.chessboard_updated %}
+                    {% if updated %}
+                        {% set days_ago = (now - updated).days %}
+                    {% else %}
+                        {% set days_ago = none %}
+                    {% endif %}
+                    {% if updated and days_ago <= 14 %}
+                        {% set health_level = 'green' %}
+                        {% set status_text = 'Всё в порядке' %}
+                        {% set status_class = 'success' %}
+                    {% elif updated and days_ago <= 30 %}
+                        {% set health_level = 'yellow' %}
+                        {% set status_text = 'Шахматка не обновлялась ' ~ days_ago ~ ' дней' %}
+                        {% set status_class = 'warning' %}
+                    {% else %}
+                        {% set health_level = 'red' %}
+                        {% set status_text = 'Шахматка не обновлялась более 30 дней' %}
+                        {% set status_class = 'danger' %}
+                    {% endif %}
+                    <article class="developer-card" data-dev-id="{{ dev.id }}" data-dev-name="{{ dev.name }}" data-dev-created="{{ dev.created_at.strftime('%d.%m.%Y') if dev.created_at else '–' }}" data-dev-regions="{{ dev.complexes|map(attribute='region')|unique|list|join(', ') }}" data-dev-complexes="{{ dev.complexes|map(attribute='name')|join(', ') }}" data-dev-commission="{{ dev.complexes|map(attribute='commission')|reject('equalto', None)|join(' / ') if dev.complexes else '—' }}" data-dev-contacts-count="{{ dev.contacts|length }}" data-dev-status-text="{{ status_text }}" data-health="{{ health_level }}">
+                        <div class="developer-info">
+                            <div class="developer-logo">{{ dev.name[:1] }}</div>
+                            <div>
+                                <div class="developer-name">{{ dev.name }}</div>
+                                <div class="developer-meta">{{ dev.complexes|length }} ЖК · {{ dev.complexes|map(attribute='region')|unique|list|join(', ') }}</div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="status-tag {{ status_class }}">{{ status_text }}</span>
+                        </div>
+                        <div class="ai-insight {{ status_class }}">
+                            <p class="ai-insight-title">AI-инсайт</p>
+                            <p class="ai-insight-text">{{ status_text }}</p>
+                        </div>
+                        <div>
+                            <div class="developer-meta">Объектов: {{ dev.complexes|length }}</div>
+                            <div class="developer-meta">Контактов: {{ dev.contacts|length }}</div>
+                        </div>
+                        <div class="developer-actions">
+                            <a href="{{ url_for('admin.edit_developer', dev_id=dev.id) }}" class="quick-action">✎ Редактировать</a>
+                            <form action="{{ url_for('admin.delete_developer', dev_id=dev.id) }}" method="POST" onsubmit="return confirm('Удалить {{ dev.name }}?');">
+                                <button type="submit" class="quick-action">🗑 Удалить</button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">Нет ни одного застройщика. Добавьте первого, чтобы начать работу с AI Operations.</div>
+            {% endif %}
+        </div>
     </div>
-    <p class="panel-copy">Здесь отображается краткий AI-просмотр застройщика и ссылки на полную карточку.</p>
-    <dl class="panel-meta">
-        <div>
-            <dt>Последнее обновление шахматки</dt>
-            <dd id="panel-status" class="panel-status">—</dd>
+
+    <aside id="side-panel" class="side-panel sidebar-panel" aria-hidden="true">
+        <div class="panel-header">
+            <div>
+                <h2 id="panel-title" class="sidebar-panel-title">Название</h2>
+                <span class="panel-badge">Быстрый просмотр</span>
+            </div>
+            <button id="side-panel-close" class="panel-close" aria-label="Закрыть панель">×</button>
         </div>
-        <div>
-            <dt>Регионы</dt>
-            <dd id="panel-regions" class="panel-regions">—</dd>
-        </div>
-        <div>
-            <dt>Объекты</dt>
-            <dd id="panel-complexes" class="panel-complexes">—</dd>
-        </div>
-        <div>
-            <dt>Контактов</dt>
-            <dd id="panel-contacts" class="panel-contacts">—</dd>
-        </div>
-        <div>
-            <dt>Создан</dt>
-            <dd id="panel-created" class="panel-created">—</dd>
-        </div>
-    </dl>
-    <a id="panel-full-link" href="#" class="panel-full-link">Открыть полную карточку</a>
-</aside>
+        <p class="panel-copy">Здесь отображается краткий AI-просмотр застройщика и ссылки на полную карточку.</p>
+        <dl class="panel-meta">
+            <div>
+                <dt>Последнее обновление шахматки</dt>
+                <dd id="panel-status" class="panel-status">—</dd>
+            </div>
+            <div>
+                <dt>Регионы</dt>
+                <dd id="panel-regions" class="panel-regions">—</dd>
+            </div>
+            <div>
+                <dt>Объекты</dt>
+                <dd id="panel-complexes" class="panel-complexes">—</dd>
+            </div>
+            <div>
+                <dt>Контактов</dt>
+                <dd id="panel-contacts" class="panel-contacts">—</dd>
+            </div>
+            <div>
+                <dt>Создан</dt>
+                <dd id="panel-created" class="panel-created">—</dd>
+            </div>
+        </dl>
+        <a id="panel-full-link" href="#" class="panel-full-link">Открыть полную карточку</a>
+    </aside>
+</div>
 {% endblock %}
 
 {% block scripts %}
